@@ -41,6 +41,10 @@ const router = createHashRouter([
     element: <GuestLayout />,
     children: [
       {
+        path: '/',
+        element: <Login />
+      },
+      {
         path: '/login',
         element: <Login />
       },
@@ -50,6 +54,6 @@ const router = createHashRouter([
       }
     ]
   }
-]);
+])
 
-export default router;
+export default router
