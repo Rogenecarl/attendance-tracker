@@ -330,4 +330,48 @@ export function getAttendanceByDateRange(startDate, endDate, section_id = null) 
       else resolve(rows)
     })
   })
+}
+
+export function getAttendanceStats(month, year, section_id = null) {
+  return new Promise((resolve, reject) => {
+    let query = `
+      SELECT 
+        COUNT(DISTINCT s.id) as total_students,
+        COUNT(DISTINCT CASE WHEN a.status = 1 THEN s.id END) as total_present,
+        COUNT(DISTINCT CASE WHEN a.status = 0 THEN s.id END) as total_absent,
+        a.date,
+        COUNT(CASE WHEN a.status = 1 THEN 1 END) as present_count,
+        COUNT(CASE WHEN a.status = 0 THEN 1 END) as absent_count
+      FROM students s
+      LEFT JOIN attendance a ON s.id = a.student_id
+      WHERE strftime('%m-%Y', a.date) = ?
+    `
+    const params = [`${month}-${year}`]
+
+    if (section_id) {
+      query += ' AND s.section_id = ?'
+      params.push(section_id)
+    }
+
+    query += ' GROUP BY a.date'
+
+    db.all(query, params, (err, rows) => {
+      if (err) reject(err)
+      else {
+        const stats = {
+          totalStudents: rows[0]?.total_students || 0,
+          totalPresent: rows[0]?.total_present || 0,
+          totalAbsent: rows[0]?.total_absent || 0
+        }
+        resolve({
+          stats,
+          attendanceData: rows.map(row => ({
+            date: row.date,
+            present: row.present_count,
+            absent: row.absent_count
+          }))
+        })
+      }
+    })
+  })
 } 
