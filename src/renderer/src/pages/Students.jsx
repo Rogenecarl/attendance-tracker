@@ -151,13 +151,10 @@ const Students = () => {
                 Name
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Section
+                Section & Schedule
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Schedule
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Action
+                Actions
               </th>
             </tr>
           </thead>
@@ -167,14 +164,24 @@ const Students = () => {
                 student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 student.student_id.toLowerCase().includes(searchQuery.toLowerCase())
               )
-              .map((student) => (
-                <tr key={student.id}>
-                  <td className="px-6 py-4 whitespace-nowrap">{student.student_id}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{student.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {sections.find(s => s.id === student.section_id)?.name || 'No Section'}
+              .map((student, idx) => (
+                <tr key={student.id} className={idx % 2 === 0 ? 'bg-blue-50' : ''}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {student.student_id}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">{student.schedule || 'No Schedule'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {student.name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">
+                      {sections.find(s => s.id === student.section_id)?.name || 'No Section'}
+                    </div>
+                    {sections.find(s => s.id === student.section_id)?.schedule && (
+                      <div className="text-sm text-gray-500">
+                        {sections.find(s => s.id === student.section_id).schedule}
+                      </div>
+                    )}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2">
                       <button
