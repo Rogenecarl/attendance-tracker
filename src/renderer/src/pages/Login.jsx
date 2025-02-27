@@ -1,8 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
+import { useAuth } from '../context/AuthContext'
 
 const Login = () => {
   const navigate = useNavigate()
+  const { login } = useAuth()
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -23,18 +25,14 @@ const Login = () => {
     setIsLoading(true)
 
     try {
-      console.log('Attempting login with:', formData.email)
       const result = await window.electron.ipcRenderer.invoke('auth:login', {
         email: formData.email,
         password: formData.password
       })
 
-      console.log('Login result:', result)
-
       if (result.success) {
-        // Store user data in localStorage
-        localStorage.setItem('user', JSON.stringify(result.data))
-        navigate('/dashboard')
+        login(result.data)
+        navigate('/dashboard', { replace: true })
       } else {
         setError(result.error || 'Invalid credentials')
       }

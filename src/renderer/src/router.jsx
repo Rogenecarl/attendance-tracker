@@ -7,44 +7,49 @@ import Settings from './pages/Settings'
 import GuestLayout from './components/GuestLayout'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
+import ProtectedRoute from './components/ProtectedRoute'
 
 const router = createHashRouter([
+  {
+    path: '/',
+    element: <Navigate to="/dashboard" />,
+  },
   {
     path: '/',
     element: <GuestLayout />,
     children: [
       {
-        path: '/',
-        element: <Navigate to="/login" />
-      },
-      {
-        path: '/login',
+        path: 'login',
         element: <Login />
       },
       {
-        path: '/signup',
+        path: 'signup',
         element: <Signup />
       }
     ]
   },
   {
     path: '/',
-    element: <DefaultLayout />,
+    element: (
+      <ProtectedRoute>
+        <DefaultLayout />
+      </ProtectedRoute>
+    ),
     children: [
       {
-        path: '/dashboard',
+        path: 'dashboard',
         element: <Dashboard />
       },
       {
-        path: '/students',
+        path: 'students',
         element: <Students />
       },
       {
-        path: '/attendance',
+        path: 'attendance',
         element: <Attendance />
       },
       {
-        path: '/settings',
+        path: 'settings',
         element: <Settings />
       }
     ]

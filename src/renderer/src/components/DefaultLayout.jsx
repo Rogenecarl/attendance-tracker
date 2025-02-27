@@ -1,7 +1,11 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
+import { useState } from 'react'
+import { useAuth } from '../context/AuthContext'
 
 const DefaultLayout = () => {
   const location = useLocation();
+  const { user, logout } = useAuth();
+  const [showLogout, setShowLogout] = useState(false);
 
   // Function to check if the link is active
   const isActive = (path) => {
@@ -11,7 +15,7 @@ const DefaultLayout = () => {
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <aside className="w-64 bg-white shadow-lg">
+      <aside className="w-64 bg-white shadow-lg flex flex-col">
         {/* Logo section */}
         <div className="flex items-center gap-2 px-6 py-5">
           <div className="w-8 h-8 bg-blue-600 rounded-lg"></div>
@@ -19,7 +23,7 @@ const DefaultLayout = () => {
         </div>
 
         {/* Navigation Links */}
-        <nav className="mt-4 px-3">
+        <nav className="mt-4 px-3 flex-1">
           <Link
             to="/dashboard"
             className={`flex items-center gap-3 px-3 py-3 rounded-lg mb-1 ${isActive('/dashboard')}`}
@@ -61,6 +65,37 @@ const DefaultLayout = () => {
             Settings
           </Link>
         </nav>
+
+        {/* User Profile Section */}
+        <div className="border-t px-3 py-4">
+          <div
+            className="flex items-center gap-3 px-3 py-3 rounded-lg cursor-pointer hover:bg-gray-100"
+            onClick={() => setShowLogout(!showLogout)}
+          >
+            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+              <span className="text-blue-600 font-medium">
+                {user?.name?.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div className="flex-1">
+              <div className="font-medium">{user?.name}</div>
+              <div className="text-sm text-gray-500">{user?.email}</div>
+            </div>
+          </div>
+
+          {/* Logout Option */}
+          {showLogout && (
+            <div 
+              className="mx-3 px-3 py-2 text-red-600 rounded-lg cursor-pointer hover:bg-red-50 flex items-center gap-2"
+              onClick={logout}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              Logout
+            </div>
+          )}
+        </div>
       </aside>
 
       {/* Main Content */}
