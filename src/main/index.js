@@ -5,6 +5,7 @@ import icon from '../../resources/icon.png?asset'
 import { setupAuthHandlers } from './handlers/authHandlers'
 import { getDatabasePath } from './database'
 import { setupStudentHandlers } from './handlers/studentHandlers'
+import { setupSectionHandlers } from './handlers/sectionHandlers'
 
 function createWindow() {
   // Create the browser window.
@@ -40,6 +41,7 @@ function createWindow() {
   // Setup IPC handlers
   setupAuthHandlers(ipcMain)
   setupStudentHandlers(ipcMain)
+  setupSectionHandlers(ipcMain)
   
   // Database path handler
   ipcMain.handle('get:dbPath', () => {

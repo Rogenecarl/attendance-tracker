@@ -2,44 +2,23 @@ import { useState, useEffect } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import { Fragment } from 'react'
 
-const Students = () => {
-  const [students, setStudents] = useState([])
+const Sections = () => {
+  const [sections, setSections] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [currentStudent, setCurrentStudent] = useState(null)
-  const [sections, setSections] = useState([])
+  const [currentSection, setCurrentSection] = useState(null)
   const [formData, setFormData] = useState({
     name: '',
-    section_id: '',
-    address: '',
-    contact: ''
+    schedule: ''
   })
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
-  const [studentToDelete, setStudentToDelete] = useState(null)
+  const [sectionToDelete, setSectionToDelete] = useState(null)
   const [successMessage, setSuccessMessage] = useState('')
 
   useEffect(() => {
-    const init = async () => {
-      await resetDatabase()
-      loadStudents()
-      loadSections()
-    }
-    init()
+    loadSections()
   }, [])
-
-  const loadStudents = async () => {
-    try {
-      const result = await window.electron.ipcRenderer.invoke('students:get')
-      if (result.success) {
-        setStudents(result.data)
-      }
-    } catch (error) {
-      console.error('Failed to load students:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   const loadSections = async () => {
     try {
@@ -49,94 +28,67 @@ const Students = () => {
       }
     } catch (error) {
       console.error('Failed to load sections:', error)
+    } finally {
+      setIsLoading(false)
     }
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      const submitData = {
-        ...formData,
-        section_id: formData.section_id ? parseInt(formData.section_id) : null
-      }
-
-      console.log('Submitting form data:', submitData)
-      const result = currentStudent
-        ? await window.electron.ipcRenderer.invoke('students:update', {
-            id: currentStudent.id,
-            ...submitData
+      const result = currentSection
+        ? await window.electron.ipcRenderer.invoke('sections:update', {
+            id: currentSection.id,
+            ...formData
           })
-        : await window.electron.ipcRenderer.invoke('students:add', submitData)
-
-      console.log('Submit result:', result)
+        : await window.electron.ipcRenderer.invoke('sections:add', formData)
 
       if (result.success) {
-        setSuccessMessage(
-          currentStudent 
-            ? 'Student updated successfully!' 
-            : 'Student added successfully!'
-        )
+        setSuccessMessage(currentSection ? 'Section updated successfully!' : 'Section added successfully!')
         setTimeout(() => setSuccessMessage(''), 3000)
         setIsAddModalOpen(false)
-        setCurrentStudent(null)
-        setFormData({ name: '', section_id: '', address: '', contact: '' })
-        loadStudents()
+        setCurrentSection(null)
+        setFormData({ name: '', schedule: '' })
+        loadSections()
       }
     } catch (error) {
-      console.error('Failed to save student:', error)
+      console.error('Failed to save section:', error)
     }
   }
 
-  const handleDeleteClick = (student) => {
-    setStudentToDelete(student)
+  const handleEdit = (section) => {
+    setCurrentSection(section)
+    setFormData({
+      name: section.name,
+      schedule: section.schedule
+    })
+    setIsAddModalOpen(true)
+  }
+
+  const handleDeleteClick = (section) => {
+    setSectionToDelete(section)
     setIsDeleteModalOpen(true)
   }
 
   const handleDeleteConfirm = async () => {
     try {
-      const result = await window.electron.ipcRenderer.invoke('students:delete', studentToDelete.id)
+      const result = await window.electron.ipcRenderer.invoke('sections:delete', sectionToDelete.id)
       if (result.success) {
-        setSuccessMessage('Student deleted successfully!')
+        setSuccessMessage('Section deleted successfully!')
         setTimeout(() => setSuccessMessage(''), 3000)
-        loadStudents()
+        loadSections()
         setIsDeleteModalOpen(false)
-        setStudentToDelete(null)
+        setSectionToDelete(null)
       }
     } catch (error) {
-      console.error('Failed to delete student:', error)
+      console.error('Failed to delete section:', error)
     }
   }
 
-  const handleEdit = (student) => {
-    setCurrentStudent(student)
-    setFormData({
-      name: student.name,
-      section_id: student.section_id?.toString() || '',
-      address: student.address || '',
-      contact: student.contact || ''
-    })
-    setIsAddModalOpen(true)
-  }
-
-  const deleteButton = (student) => (
-    <button
-      onClick={() => handleDeleteClick(student)}
-      className="text-red-600 hover:text-red-900"
-    >
-      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-        <path
-          fillRule="evenodd"
-          d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-          clipRule="evenodd"
-        />
-      </svg>
-    </button>
-  )
-
-  const actionButtons = (student) => (
+  const actionButtons = (section) => (
     <div className="flex items-center gap-2">
       <button
-        onClick={() => handleEdit(student)}
+        onClick={() => handleEdit(section)}
         className="text-blue-600 hover:text-blue-900"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -148,71 +100,61 @@ const Students = () => {
           />
         </svg>
       </button>
-      {deleteButton(student)}
+      <button
+        onClick={() => handleDeleteClick(section)}
+        className="text-red-600 hover:text-red-900"
+      >
+        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path
+            fillRule="evenodd"
+            d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+            clipRule="evenodd"
+          />
+        </svg>
+      </button>
     </div>
   )
-
-  const filteredStudents = students.filter(student =>
-    student.name.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
-  const resetDatabase = async () => {
-    try {
-      const result = await window.electron.ipcRenderer.invoke('students:reset-db')
-      if (result.success) {
-        console.log('Database reset successful')
-        loadStudents()
-      }
-    } catch (error) {
-      console.error('Failed to reset database:', error)
-    }
-  }
 
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Students</h1>
+        <h1 className="text-2xl font-bold">Sections</h1>
         <button
           onClick={() => {
-            setCurrentStudent(null)
-            setFormData({ name: '', section_id: '', address: '', contact: '' })
+            setCurrentSection(null)
+            setFormData({ name: '', schedule: '' })
             setIsAddModalOpen(true)
           }}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
         >
-          + Add New Student
+          + Add New Section
         </button>
       </div>
 
+      {/* Success Message */}
       {successMessage && (
         <div className="mb-4 p-4 bg-green-100 text-green-700 rounded-lg flex items-center justify-between">
           <span>{successMessage}</span>
-          <button 
-            onClick={() => setSuccessMessage('')} 
-            className="text-green-700 hover:text-green-900"
-          >
+          <button onClick={() => setSuccessMessage('')} className="text-green-700 hover:text-green-900">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M6 18L18 6M6 6l12 12" 
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
       )}
 
+      {/* Search Bar */}
       <div className="mb-6">
         <input
           type="text"
-          placeholder="Search on Anything..."
+          placeholder="Search sections..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full max-w-md px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
+      {/* Sections Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -224,16 +166,7 @@ const Students = () => {
                 Name
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Section
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Schedule
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Address
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Contact
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Action
@@ -241,23 +174,25 @@ const Students = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredStudents.map((student) => (
-              <tr key={student.id}>
-                <td className="px-6 py-4 whitespace-nowrap">{student.id}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{student.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{student.section_name}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{student.schedule}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{student.address}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{student.contact}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {actionButtons(student)}
-                </td>
-              </tr>
-            ))}
+            {sections
+              .filter(section =>
+                section.name.toLowerCase().includes(searchQuery.toLowerCase())
+              )
+              .map((section) => (
+                <tr key={section.id}>
+                  <td className="px-6 py-4 whitespace-nowrap">{section.id}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{section.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">{section.schedule}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {actionButtons(section)}
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>
 
+      {/* Add/Edit Modal */}
       <Transition appear show={isAddModalOpen} as={Fragment}>
         <Dialog as="div" className="relative z-10" onClose={() => setIsAddModalOpen(false)}>
           <Transition.Child
@@ -285,7 +220,7 @@ const Students = () => {
               >
                 <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
                   <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">
-                    {currentStudent ? 'Edit Student' : 'Add New Student'}
+                    {currentSection ? 'Edit Section' : 'Add New Section'}
                   </Dialog.Title>
 
                   <form onSubmit={handleSubmit} className="mt-4 space-y-4">
@@ -296,46 +231,19 @@ const Students = () => {
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         required
+                        placeholder="e.g., Morning A"
                         className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Section</label>
-                      <select
-                        value={formData.section_id}
-                        onChange={(e) => {
-                          console.log('Selected section_id:', e.target.value)
-                          setFormData({ ...formData, section_id: e.target.value })
-                        }}
+                      <label className="block text-sm font-medium text-gray-700">Schedule</label>
+                      <input
+                        type="text"
+                        value={formData.schedule}
+                        onChange={(e) => setFormData({ ...formData, schedule: e.target.value })}
                         required
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      >
-                        <option value="">Select a section</option>
-                        {sections.map((section) => (
-                          <option key={section.id} value={section.id}>
-                            {section.name} ({section.schedule})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Address</label>
-                      <input
-                        type="text"
-                        value={formData.address}
-                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Contact</label>
-                      <input
-                        type="text"
-                        value={formData.contact}
-                        onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+                        placeholder="e.g., 8:00 AM - 12:00 PM"
                         className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
@@ -343,7 +251,11 @@ const Students = () => {
                     <div className="mt-6 flex justify-end gap-3">
                       <button
                         type="button"
-                        onClick={() => setIsAddModalOpen(false)}
+                        onClick={() => {
+                          setIsAddModalOpen(false)
+                          setCurrentSection(null)
+                          setFormData({ name: '', schedule: '' })
+                        }}
                         className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-500"
                       >
                         Cancel
@@ -352,7 +264,7 @@ const Students = () => {
                         type="submit"
                         className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500"
                       >
-                        {currentStudent ? 'Update' : 'Add'} Student
+                        {currentSection ? 'Save Changes' : 'Add Section'}
                       </button>
                     </div>
                   </form>
@@ -363,6 +275,7 @@ const Students = () => {
         </Dialog>
       </Transition>
 
+      {/* Delete Confirmation Modal */}
       <Transition appear show={isDeleteModalOpen} as={Fragment}>
         <Dialog as="div" className="relative z-10" onClose={() => setIsDeleteModalOpen(false)}>
           <Transition.Child
@@ -390,14 +303,14 @@ const Students = () => {
               >
                 <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
                   <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">
-                    Delete Student
+                    Delete Section
                   </Dialog.Title>
 
                   <div className="mt-2">
                     <p className="text-sm text-gray-500">
                       Are you sure you want to delete{' '}
                       <span className="font-medium text-gray-700">
-                        {studentToDelete?.name}
+                        {sectionToDelete?.name}
                       </span>
                       ? This action cannot be undone.
                     </p>
@@ -416,7 +329,7 @@ const Students = () => {
                       onClick={handleDeleteConfirm}
                       className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-500"
                     >
-                      Delete Student
+                      Delete Section
                     </button>
                   </div>
                 </Dialog.Panel>
@@ -429,6 +342,4 @@ const Students = () => {
   )
 }
 
-export default Students
-
-
+export default Sections 

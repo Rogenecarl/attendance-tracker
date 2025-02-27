@@ -8,6 +8,7 @@ import GuestLayout from './components/GuestLayout'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import ProtectedRoute from './components/ProtectedRoute'
+import Sections from './pages/Sections'
 
 const router = createHashRouter([
   {
@@ -51,6 +52,10 @@ const router = createHashRouter([
       {
         path: 'settings',
         element: <Settings />
+      },
+      {
+        path: 'sections',
+        element: <Sections />
       }
     ]
   }

@@ -12,7 +12,12 @@ const api = {
         'students:get',
         'students:add',
         'students:update',
-        'students:delete'
+        'students:delete',
+        'sections:get',
+        'sections:add',
+        'sections:update',
+        'sections:delete',
+        'students:reset-db'
       ]
       if (validChannels.includes(channel)) {
         return ipcRenderer.invoke(channel, data)
