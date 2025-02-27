@@ -5,7 +5,15 @@ import { electronAPI } from '@electron-toolkit/preload'
 const api = {
   ipcRenderer: {
     invoke: (channel, data) => {
-      const validChannels = ['auth:login', 'auth:register', 'get:dbPath']
+      const validChannels = [
+        'auth:login',
+        'auth:register',
+        'get:dbPath',
+        'students:get',
+        'students:add',
+        'students:update',
+        'students:delete'
+      ]
       if (validChannels.includes(channel)) {
         return ipcRenderer.invoke(channel, data)
       }

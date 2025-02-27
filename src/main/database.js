@@ -25,6 +25,17 @@ function initDatabase() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `)
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS students (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      grade TEXT NOT NULL,
+      address TEXT,
+      contact TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `)
 }
 
 export async function registerUser(userData) {
@@ -83,4 +94,51 @@ export async function loginUser(email, password) {
 
 export function getDatabasePath() {
   return dbPath
+}
+
+// Add student CRUD operations
+export function getStudents() {
+  return new Promise((resolve, reject) => {
+    db.all('SELECT * FROM students ORDER BY id DESC', [], (err, rows) => {
+      if (err) reject(err)
+      else resolve(rows)
+    })
+  })
+}
+
+export function addStudent(studentData) {
+  const { name, grade, address, contact } = studentData
+  return new Promise((resolve, reject) => {
+    db.run(
+      'INSERT INTO students (name, grade, address, contact) VALUES (?, ?, ?, ?)',
+      [name, grade, address, contact],
+      function (err) {
+        if (err) reject(err)
+        else resolve({ id: this.lastID })
+      }
+    )
+  })
+}
+
+export function updateStudent(id, studentData) {
+  const { name, grade, address, contact } = studentData
+  return new Promise((resolve, reject) => {
+    db.run(
+      'UPDATE students SET name = ?, grade = ?, address = ?, contact = ? WHERE id = ?',
+      [name, grade, address, contact, id],
+      (err) => {
+        if (err) reject(err)
+        else resolve({ id })
+      }
+    )
+  })
+}
+
+export function deleteStudent(id) {
+  return new Promise((resolve, reject) => {
+    db.run('DELETE FROM students WHERE id = ?', [id], (err) => {
+      if (err) reject(err)
+      else resolve({ id })
+    })
+  })
 } 

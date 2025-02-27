@@ -4,6 +4,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { setupAuthHandlers } from './handlers/authHandlers'
 import { getDatabasePath } from './database'
+import { setupStudentHandlers } from './handlers/studentHandlers'
 
 function createWindow() {
   // Create the browser window.
@@ -38,6 +39,7 @@ function createWindow() {
 
   // Setup IPC handlers
   setupAuthHandlers(ipcMain)
+  setupStudentHandlers(ipcMain)
   
   // Database path handler
   ipcMain.handle('get:dbPath', () => {
