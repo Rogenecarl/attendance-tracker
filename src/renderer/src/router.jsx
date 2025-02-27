@@ -1,4 +1,4 @@
-import { createHashRouter } from 'react-router-dom'
+import { createHashRouter, Navigate } from 'react-router-dom'
 import DefaultLayout from './components/DefaultLayout'
 import Dashboard from './pages/Dashboard'
 import Students from './pages/Students'
@@ -11,12 +11,26 @@ import Signup from './pages/Signup'
 const router = createHashRouter([
   {
     path: '/',
-    element: <DefaultLayout />,
+    element: <GuestLayout />,
     children: [
       {
         path: '/',
-        element: <Dashboard />
+        element: <Navigate to="/login" />
       },
+      {
+        path: '/login',
+        element: <Login />
+      },
+      {
+        path: '/signup',
+        element: <Signup />
+      }
+    ]
+  },
+  {
+    path: '/',
+    element: <DefaultLayout />,
+    children: [
       {
         path: '/dashboard',
         element: <Dashboard />
@@ -32,25 +46,6 @@ const router = createHashRouter([
       {
         path: '/settings',
         element: <Settings />
-      }
-    ]
-  },
-
-  {
-    path: '/',
-    element: <GuestLayout />,
-    children: [
-      {
-        path: '/',
-        element: <Login />
-      },
-      {
-        path: '/login',
-        element: <Login />
-      },
-      {
-        path: '/signup',
-        element: <Signup />
       }
     ]
   }

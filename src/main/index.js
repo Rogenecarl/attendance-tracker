@@ -2,6 +2,7 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import { registerUser, loginUser } from './database.js'
 
 function createWindow() {
   // Create the browser window.
@@ -51,6 +52,25 @@ app.whenReady().then(() => {
 
   // IPC test
   ipcMain.on('ping', () => console.log('pong'))
+
+  // Add IPC handlers
+  ipcMain.handle('auth:register', async (event, userData) => {
+    try {
+      const result = await registerUser(userData)
+      return { success: true, data: result }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  })
+
+  ipcMain.handle('auth:login', async (event, { email, password }) => {
+    try {
+      const user = await loginUser(email, password)
+      return { success: true, data: user }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  })
 
   createWindow()
 
