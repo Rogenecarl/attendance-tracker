@@ -38,14 +38,13 @@ function initDatabase() {
     )
   `)
 
-  // Create new students table with section_id
+  // Create new students table with student_id
   db.run(`
     CREATE TABLE IF NOT EXISTS students (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      student_id TEXT NOT NULL UNIQUE,
       name TEXT NOT NULL,
       section_id INTEGER,
-      address TEXT,
-      contact TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (section_id) REFERENCES sections (id)
     )
@@ -192,12 +191,11 @@ export function getStudents() {
 
 // Update addStudent function
 export function addStudent(studentData) {
-  const { name, section_id, address, contact } = studentData
-  console.log('Adding student with data:', studentData)
+  const { name, student_id, section_id } = studentData
   return new Promise((resolve, reject) => {
     db.run(
-      'INSERT INTO students (name, section_id, address, contact) VALUES (?, ?, ?, ?)',
-      [name, section_id, address, contact],
+      'INSERT INTO students (name, student_id, section_id) VALUES (?, ?, ?)',
+      [name, student_id, section_id],
       function (err) {
         if (err) {
           console.error('Database error:', err)
@@ -212,11 +210,11 @@ export function addStudent(studentData) {
 
 // Update updateStudent function
 export function updateStudent(id, studentData) {
-  const { name, section_id, address, contact } = studentData
+  const { name, student_id, section_id } = studentData
   return new Promise((resolve, reject) => {
     db.run(
-      'UPDATE students SET name = ?, section_id = ?, address = ?, contact = ? WHERE id = ?',
-      [name, section_id, address, contact, id],
+      'UPDATE students SET name = ?, student_id = ?, section_id = ? WHERE id = ?',
+      [name, student_id, section_id, id],
       (err) => {
         if (err) reject(err)
         else resolve({ id })
@@ -242,10 +240,9 @@ export function resetDatabase() {
       db.run(`
         CREATE TABLE IF NOT EXISTS students (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
+          student_id TEXT NOT NULL UNIQUE,
           name TEXT NOT NULL,
           section_id INTEGER,
-          address TEXT,
-          contact TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (section_id) REFERENCES sections (id)
         )

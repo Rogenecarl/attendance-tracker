@@ -11,9 +11,8 @@ const Students = () => {
   const [sections, setSections] = useState([])
   const [formData, setFormData] = useState({
     name: '',
-    section_id: '',
-    address: '',
-    contact: ''
+    student_id: '',
+    section_id: ''
   })
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [studentToDelete, setStudentToDelete] = useState(null)
@@ -79,7 +78,7 @@ const Students = () => {
         setTimeout(() => setSuccessMessage(''), 3000)
         setIsAddModalOpen(false)
         setCurrentStudent(null)
-        setFormData({ name: '', section_id: '', address: '', contact: '' })
+        setFormData({ name: '', student_id: '', section_id: '' })
         loadStudents()
       }
     } catch (error) {
@@ -111,9 +110,8 @@ const Students = () => {
     setCurrentStudent(student)
     setFormData({
       name: student.name,
-      section_id: student.section_id?.toString() || '',
-      address: student.address || '',
-      contact: student.contact || ''
+      student_id: student.student_id || '',
+      section_id: student.section_id?.toString() || ''
     })
     setIsAddModalOpen(true)
   }
@@ -175,7 +173,7 @@ const Students = () => {
         <button
           onClick={() => {
             setCurrentStudent(null)
-            setFormData({ name: '', section_id: '', address: '', contact: '' })
+            setFormData({ name: '', student_id: '', section_id: '' })
             setIsAddModalOpen(true)
           }}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
@@ -221,6 +219,9 @@ const Students = () => {
                 Id
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Student ID
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Name
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -228,12 +229,6 @@ const Students = () => {
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Schedule
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Address
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Contact
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Action
@@ -244,11 +239,10 @@ const Students = () => {
             {filteredStudents.map((student) => (
               <tr key={student.id}>
                 <td className="px-6 py-4 whitespace-nowrap">{student.id}</td>
+                <td className="px-6 py-4 whitespace-nowrap">{student.student_id}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{student.name}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{student.section_name}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{student.schedule}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{student.address}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{student.contact}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   {actionButtons(student)}
                 </td>
@@ -290,6 +284,17 @@ const Students = () => {
 
                   <form onSubmit={handleSubmit} className="mt-4 space-y-4">
                     <div>
+                      <label className="block text-sm font-medium text-gray-700">Student ID</label>
+                      <input
+                        type="text"
+                        value={formData.student_id}
+                        onChange={(e) => setFormData({ ...formData, student_id: e.target.value })}
+                        required
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div>
                       <label className="block text-sm font-medium text-gray-700">Name</label>
                       <input
                         type="text"
@@ -304,10 +309,7 @@ const Students = () => {
                       <label className="block text-sm font-medium text-gray-700">Section</label>
                       <select
                         value={formData.section_id}
-                        onChange={(e) => {
-                          console.log('Selected section_id:', e.target.value)
-                          setFormData({ ...formData, section_id: e.target.value })
-                        }}
+                        onChange={(e) => setFormData({ ...formData, section_id: e.target.value })}
                         required
                         className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       >
@@ -318,26 +320,6 @@ const Students = () => {
                           </option>
                         ))}
                       </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Address</label>
-                      <input
-                        type="text"
-                        value={formData.address}
-                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Contact</label>
-                      <input
-                        type="text"
-                        value={formData.contact}
-                        onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
                     </div>
 
                     <div className="mt-6 flex justify-end gap-3">
