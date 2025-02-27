@@ -9,6 +9,7 @@ const Attendance = () => {
   const [attendance, setAttendance] = useState({})
   const [showCalendar, setShowCalendar] = useState(false)
   const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [filteredStudents, setFilteredStudents] = useState([])
 
   // Get number of days in selected month
   const daysInMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate()
@@ -16,6 +17,13 @@ const Attendance = () => {
   useEffect(() => {
     loadSections()
     loadStudents()
+  }, [])
+
+  useEffect(() => {
+    filterStudents()
+  }, [selectedSection, students])
+
+  useEffect(() => {
     loadAttendance()
   }, [selectedMonth, selectedSection])
 
@@ -35,6 +43,7 @@ const Attendance = () => {
       const result = await window.electron.ipcRenderer.invoke('students:get')
       if (result.success) {
         setStudents(result.data)
+        setFilteredStudents(result.data)
       }
     } catch (error) {
       console.error('Failed to load students:', error)
@@ -97,6 +106,22 @@ const Attendance = () => {
     } catch (error) {
       console.error('Failed to mark attendance:', error)
     }
+  }
+
+  const filterStudents = () => {
+    if (!selectedSection) {
+      setFilteredStudents(students)
+    } else {
+      const filtered = students.filter(
+        student => student.section_id === parseInt(selectedSection)
+      )
+      setFilteredStudents(filtered)
+    }
+  }
+
+  const handleSectionChange = (e) => {
+    setSelectedSection(e.target.value)
+    loadAttendance()
   }
 
   const previousMonth = () => {
@@ -236,9 +261,13 @@ const Attendance = () => {
 
   return (
     <div className="p-6">
-      <div className="mb-6 flex gap-4 items-center">
-        {/* Month Selector with Calendar */}
+      <h1 className="text-2xl font-bold mb-6">Attendance</h1>
+      
+      {/* Filters Section */}
+      <div className="bg-white rounded-lg p-4 mb-6 flex items-center gap-4">
+        {/* Month Selector */}
         <div className="relative">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Select Month:</label>
           <button
             onClick={() => setShowCalendar(!showCalendar)}
             className="min-w-[200px] px-4 py-2 border rounded-lg flex items-center justify-between hover:bg-gray-50"
@@ -254,6 +283,7 @@ const Attendance = () => {
             </svg>
           </button>
 
+          {/* Calendar Component */}
           <Calendar 
             isOpen={showCalendar} 
             onClose={() => setShowCalendar(false)} 
@@ -261,51 +291,74 @@ const Attendance = () => {
         </div>
 
         {/* Section Selector */}
-        <select
-          value={selectedSection}
-          onChange={(e) => setSelectedSection(e.target.value)}
-          className="px-4 py-2 border rounded-lg"
-        >
-          <option value="">Select Section</option>
-          {sections.map(section => (
-            <option key={section.id} value={section.id}>
-              {section.name}
-            </option>
-          ))}
-        </select>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Select Section:</label>
+          <select
+            value={selectedSection}
+            onChange={handleSectionChange}
+            className="min-w-[300px] px-4 py-2 border rounded-lg bg-white"
+          >
+            <option value="">All Sections</option>
+            {sections.map(section => (
+              <option key={section.id} value={section.id}>
+                [{section.name}] {section.schedule}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        {/* Search Button */}
+        <button 
+          onClick={loadAttendance}
+          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 mt-6"
+        >
           Search
         </button>
       </div>
 
       {/* Attendance Table */}
-      <div className="bg-white rounded-lg shadow overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Student Id
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Name
-              </th>
-              {[...Array(daysInMonth)].map((_, i) => (
-                <th key={i + 1} className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {i + 1}
+      <div className="bg-white rounded-lg shadow">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                  Student Id
                 </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {students
-              .filter(student => !selectedSection || student.section_id === selectedSection)
-              .map(student => (
-                <tr key={student.id}>
-                  <td className="px-6 py-4 whitespace-nowrap">{student.student_id}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">{student.name}</td>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Name
+                </th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-8">
+                  =
+                </th>
+                {[...Array(daysInMonth)].map((_, i) => (
+                  <th key={i + 1} className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-8">
+                    {i + 1}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredStudents.map((student, idx) => (
+                <tr key={student.id} className={idx % 2 === 0 ? 'bg-blue-50' : ''}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {student.student_id}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {student.name}
+                    <span className="text-gray-500 text-xs ml-2">
+                      [{sections.find(s => s.id === student.section_id)?.name || 'No Section'}]
+                      {' '}
+                      {sections.find(s => s.id === student.section_id)?.schedule || ''}
+                    </span>
+                  </td>
+                  <td className="px-2 py-4 text-center">
+                    <span className="text-sm font-medium">
+                      {Object.values(attendance[student.id] || {}).filter(Boolean).length}
+                    </span>
+                  </td>
                   {[...Array(daysInMonth)].map((_, i) => (
-                    <td key={i + 1} className="px-3 py-4 text-center">
+                    <td key={i + 1} className="px-2 py-4 text-center">
                       <input
                         type="checkbox"
                         checked={attendance[student.id]?.[i + 1] || false}
@@ -316,8 +369,9 @@ const Attendance = () => {
                   ))}
                 </tr>
               ))}
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   )

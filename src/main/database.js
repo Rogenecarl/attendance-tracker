@@ -186,7 +186,7 @@ export function getStudents() {
       SELECT 
         students.*,
         sections.name as section_name,
-        sections.schedule
+        sections.schedule as section_schedule
       FROM students
       LEFT JOIN sections ON students.section_id = sections.id
       ORDER BY students.id DESC
