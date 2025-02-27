@@ -6,36 +6,37 @@ export function setupStudentHandlers(ipcMain) {
       const students = await getStudents()
       return { success: true, data: students }
     } catch (error) {
+      console.error('Error getting students:', error)
       return { success: false, error: error.message }
     }
   })
 
   ipcMain.handle('students:add', async (event, studentData) => {
-    console.log('Received student data:', studentData)
     try {
       const result = await addStudent(studentData)
-      console.log('Add result:', result)
       return { success: true, data: result }
     } catch (error) {
-      console.error('Handler error:', error)
+      console.error('Error adding student:', error)
       return { success: false, error: error.message }
     }
   })
 
-  ipcMain.handle('students:update', async (event, { id, ...studentData }) => {
+  ipcMain.handle('students:update', async (event, studentData) => {
     try {
-      const result = await updateStudent(id, studentData)
+      const result = await updateStudent(studentData.id, studentData)
       return { success: true, data: result }
     } catch (error) {
+      console.error('Error updating student:', error)
       return { success: false, error: error.message }
     }
   })
 
   ipcMain.handle('students:delete', async (event, id) => {
     try {
-      await deleteStudent(id)
-      return { success: true }
+      const result = await deleteStudent(id)
+      return { success: true, data: result }
     } catch (error) {
+      console.error('Error deleting student:', error)
       return { success: false, error: error.message }
     }
   })

@@ -45,6 +45,7 @@ function initDatabase() {
       student_id TEXT NOT NULL UNIQUE,
       name TEXT NOT NULL,
       section_id INTEGER,
+      schedule TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (section_id) REFERENCES sections (id)
     )
@@ -191,11 +192,11 @@ export function getStudents() {
 
 // Update addStudent function
 export function addStudent(studentData) {
-  const { name, student_id, section_id } = studentData
+  const { name, student_id, section_id, schedule } = studentData
   return new Promise((resolve, reject) => {
     db.run(
-      'INSERT INTO students (name, student_id, section_id) VALUES (?, ?, ?)',
-      [name, student_id, section_id],
+      'INSERT INTO students (name, student_id, section_id, schedule) VALUES (?, ?, ?, ?)',
+      [name, student_id, section_id, schedule],
       function (err) {
         if (err) {
           console.error('Database error:', err)
@@ -210,11 +211,11 @@ export function addStudent(studentData) {
 
 // Update updateStudent function
 export function updateStudent(id, studentData) {
-  const { name, student_id, section_id } = studentData
+  const { name, student_id, section_id, schedule } = studentData
   return new Promise((resolve, reject) => {
     db.run(
-      'UPDATE students SET name = ?, student_id = ?, section_id = ? WHERE id = ?',
-      [name, student_id, section_id, id],
+      'UPDATE students SET name = ?, student_id = ?, section_id = ?, schedule = ? WHERE id = ?',
+      [name, student_id, section_id, schedule, id],
       (err) => {
         if (err) reject(err)
         else resolve({ id })
