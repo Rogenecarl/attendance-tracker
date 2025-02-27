@@ -47,18 +47,34 @@ export async function registerUser(userData) {
 }
 
 export async function loginUser(email, password) {
+  console.log('Attempting login for email:', email)
+  
   return new Promise((resolve, reject) => {
     db.get('SELECT * FROM users WHERE email = ?', [email], async (err, user) => {
       if (err) {
+        console.error('Database error:', err)
         reject(err)
       } else if (!user) {
+        console.log('User not found for email:', email)
         reject(new Error('User not found'))
       } else {
-        const passwordMatch = await bcrypt.compare(password, user.password)
-        if (passwordMatch) {
-          resolve({ id: user.id, name: user.name, email: user.email })
-        } else {
-          reject(new Error('Invalid password'))
+        console.log('User found, comparing passwords')
+        try {
+          const passwordMatch = await bcrypt.compare(password, user.password)
+          console.log('Password match result:', passwordMatch)
+          
+          if (passwordMatch) {
+            resolve({
+              id: user.id,
+              name: user.name,
+              email: user.email
+            })
+          } else {
+            reject(new Error('Invalid password'))
+          }
+        } catch (error) {
+          console.error('Password comparison error:', error)
+          reject(error)
         }
       }
     })

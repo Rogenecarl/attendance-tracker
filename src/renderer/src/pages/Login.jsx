@@ -8,6 +8,7 @@ const Login = () => {
     password: ''
   })
   const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleChange = (e) => {
     setFormData({
@@ -19,18 +20,29 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setIsLoading(true)
 
     try {
-      const result = await window.electron.ipcRenderer.invoke('auth:login', formData)
+      console.log('Attempting login with:', formData.email)
+      const result = await window.electron.ipcRenderer.invoke('auth:login', {
+        email: formData.email,
+        password: formData.password
+      })
+
+      console.log('Login result:', result)
+
       if (result.success) {
-        // Store user data in localStorage or state management
+        // Store user data in localStorage
         localStorage.setItem('user', JSON.stringify(result.data))
         navigate('/dashboard')
       } else {
-        setError(result.error)
+        setError(result.error || 'Invalid credentials')
       }
     } catch (err) {
-      setError('An error occurred during login')
+      console.error('Login error:', err)
+      setError(`Login failed: ${err.message}`)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -71,6 +83,8 @@ const Login = () => {
               id="password"
               name="password"
               type="password"
+              value={formData.password}
+              onChange={handleChange}
               autoComplete="current-password"
               required
               className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
@@ -101,9 +115,10 @@ const Login = () => {
         <div>
           <button
             type="submit"
+            disabled={isLoading}
             className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            Sign in
+            {isLoading ? 'Signing in...' : 'Sign in'}
           </button>
         </div>
       </form>

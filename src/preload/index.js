@@ -2,25 +2,29 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
 // Custom APIs for renderer
-const api = {}
+const api = {
+  ipcRenderer: {
+    invoke: (channel, data) => {
+      const validChannels = ['auth:login', 'auth:register', 'get:dbPath']
+      if (validChannels.includes(channel)) {
+        return ipcRenderer.invoke(channel, data)
+      }
+      return Promise.reject(new Error('Invalid channel'))
+    }
+  }
+}
 
 // Use `contextBridge` APIs to expose Electron APIs to
 // renderer only if context isolation is enabled, otherwise
 // just add to the DOM global.
 if (process.contextIsolated) {
   try {
-    contextBridge.exposeInMainWorld('electron', electronAPI)
-    contextBridge.exposeInMainWorld('api', api)
-    contextBridge.exposeInMainWorld('ipcRenderer', {
-      invoke: (channel, data) => ipcRenderer.invoke(channel, data)
-    })
+    contextBridge.exposeInMainWorld('electron', api)
+    contextBridge.exposeInMainWorld('electronAPI', electronAPI)
   } catch (error) {
     console.error(error)
   }
 } else {
-  window.electron = electronAPI
-  window.api = api
-  window.ipcRenderer = {
-    invoke: (channel, data) => ipcRenderer.invoke(channel, data)
-  }
+  window.electron = api
+  window.electronAPI = electronAPI
 }
