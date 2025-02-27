@@ -6,6 +6,7 @@ import { setupAuthHandlers } from './handlers/authHandlers'
 import { getDatabasePath } from './database'
 import { setupStudentHandlers } from './handlers/studentHandlers'
 import { setupSectionHandlers } from './handlers/sectionHandlers'
+import { setupAttendanceHandlers } from './handlers/attendanceHandlers'
 
 function createWindow() {
   // Create the browser window.
@@ -42,6 +43,7 @@ function createWindow() {
   setupAuthHandlers(ipcMain)
   setupStudentHandlers(ipcMain)
   setupSectionHandlers(ipcMain)
+  setupAttendanceHandlers(ipcMain)
   
   // Database path handler
   ipcMain.handle('get:dbPath', () => {

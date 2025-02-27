@@ -16,9 +16,6 @@ const db = new sqlite3.Database(dbPath, (err) => {
 })
 
 function initDatabase() {
-  // Drop existing students table if it exists
-  db.run(`DROP TABLE IF EXISTS students`)
-
   db.run(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,7 +35,6 @@ function initDatabase() {
     )
   `)
 
-  // Create new students table with student_id
   db.run(`
     CREATE TABLE IF NOT EXISTS students (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -48,6 +44,17 @@ function initDatabase() {
       schedule TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (section_id) REFERENCES sections (id)
+    )
+  `)
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS attendance (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      student_id INTEGER,
+      date DATE,
+      status BOOLEAN,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (student_id) REFERENCES students (id)
     )
   `)
 }
@@ -233,24 +240,94 @@ export function deleteStudent(id) {
   })
 }
 
-// Add a function to reset the database if needed
+// Update resetDatabase function to be more specific
 export function resetDatabase() {
   return new Promise((resolve, reject) => {
     db.serialize(() => {
-      db.run(`DROP TABLE IF EXISTS students`)
+      // Only drop tables if explicitly needed
+      db.run(`DROP TABLE IF EXISTS attendance`)
       db.run(`
-        CREATE TABLE IF NOT EXISTS students (
+        CREATE TABLE IF NOT EXISTS attendance (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          student_id TEXT NOT NULL UNIQUE,
-          name TEXT NOT NULL,
-          section_id INTEGER,
+          student_id INTEGER,
+          date DATE,
+          status BOOLEAN,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (section_id) REFERENCES sections (id)
+          FOREIGN KEY (student_id) REFERENCES students (id)
         )
       `, (err) => {
         if (err) reject(err)
         else resolve()
       })
+    })
+  })
+}
+
+// Update getAttendance to include student info
+export function getAttendance(month, year, section_id = null) {
+  return new Promise((resolve, reject) => {
+    let query = `
+      SELECT 
+        a.*,
+        s.name as student_name,
+        s.student_id,
+        s.section_id
+      FROM attendance a
+      JOIN students s ON a.student_id = s.id
+      WHERE strftime('%m-%Y', a.date) = ?
+    `
+    const params = [`${month}-${year}`]
+
+    if (section_id) {
+      query += ' AND s.section_id = ?'
+      params.push(section_id)
+    }
+
+    db.all(query, params, (err, rows) => {
+      if (err) reject(err)
+      else resolve(rows)
+    })
+  })
+}
+
+// Update markAttendance to handle multiple records
+export function markAttendance(attendanceData) {
+  return new Promise((resolve, reject) => {
+    const { student_id, date, status } = attendanceData
+    
+    db.run(`
+      INSERT OR REPLACE INTO attendance (student_id, date, status)
+      VALUES (?, ?, ?)
+    `, [student_id, date, status ? 1 : 0], function(err) {
+      if (err) reject(err)
+      else resolve({ id: this.lastID })
+    })
+  })
+}
+
+// Add function to get attendance by date range
+export function getAttendanceByDateRange(startDate, endDate, section_id = null) {
+  return new Promise((resolve, reject) => {
+    let query = `
+      SELECT 
+        a.*,
+        s.name as student_name,
+        s.student_id,
+        s.section_id
+      FROM attendance a
+      JOIN students s ON a.student_id = s.id
+      WHERE a.date BETWEEN ? AND ?
+    `
+    const params = [startDate, endDate]
+
+    if (section_id) {
+      query += ' AND s.section_id = ?'
+      params.push(section_id)
+    }
+
+    db.all(query, params, (err, rows) => {
+      if (err) reject(err)
+      else resolve(rows)
     })
   })
 } 
