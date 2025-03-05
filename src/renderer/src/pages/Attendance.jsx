@@ -385,6 +385,7 @@ const Attendance = () => {
                   {[...Array(daysInMonth)].map((_, day) => {
                     const currentDate = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), day + 1)
                     const isPresent = isStudentPresent(student.id, day + 1)
+                    const isPastDate = currentDate < new Date(new Date().setHours(0, 0, 0, 0))
                     
                     return (
                       <td key={day + 1} className="px-2 py-4 whitespace-nowrap text-center">
@@ -393,10 +394,13 @@ const Attendance = () => {
                             type="checkbox"
                             checked={isPresent}
                             onChange={(e) => handleAttendanceChange(student.id, currentDate, e.target.checked)}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                            disabled={isPastDate}
+                            className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer
+                              ${isPastDate ? 'opacity-50 cursor-not-allowed' : ''}`}
                           />
                           {isPresent && (
-                            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                            <div className={`absolute inset-0 pointer-events-none flex items-center justify-center
+                              ${isPastDate ? 'opacity-50' : ''}`}>
                               <CheckIcon />
                             </div>
                           )}
