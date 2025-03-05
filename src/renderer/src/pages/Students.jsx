@@ -282,7 +282,7 @@ const Students = () => {
                         <option value="">Select a section</option>
                         {sections.map((section) => (
                           <option key={section.id} value={section.id}>
-                            {section.name}
+                            {section.name} - {section.schedule || 'No schedule'}
                           </option>
                         ))}
                       </select>

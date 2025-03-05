@@ -1,9 +1,11 @@
-import { Link, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { toast } from 'react-hot-toast'
 
 const Login = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const { login } = useAuth()
   const [formData, setFormData] = useState({
     email: '',
@@ -11,6 +13,13 @@ const Login = () => {
   })
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    // Check if we have a success message from registration
+    if (location.state?.registrationSuccess) {
+      toast.success('Account created successfully! Please log in.')
+    }
+  }, [location])
 
   const handleChange = (e) => {
     setFormData({
@@ -49,6 +58,13 @@ const Login = () => {
       <h2 className="mb-6 text-center text-3xl font-extrabold text-gray-900">
         Sign in to your account
       </h2>
+      
+      {location.state?.registrationSuccess && (
+        <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded text-center">
+          Account created successfully! Please log in.
+        </div>
+      )}
+
       {error && (
         <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
           {error}

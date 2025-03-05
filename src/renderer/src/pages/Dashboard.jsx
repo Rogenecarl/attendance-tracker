@@ -36,10 +36,12 @@ const Dashboard = () => {
   const [showCalendar, setShowCalendar] = useState(false)
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [totalSections, setTotalSections] = useState(0)
+  const [studentCount, setStudentCount] = useState(0)
 
   useEffect(() => {
     loadSections()
     loadDashboardData()
+    loadTotalStudents()
   }, [selectedMonth, selectedSection])
 
   const loadSections = async () => {
@@ -68,6 +70,17 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error('Failed to load dashboard data:', error)
+    }
+  }
+
+  const loadTotalStudents = async () => {
+    try {
+      const result = await window.electron.ipcRenderer.invoke('students:get')
+      if (result.success) {
+        setStudentCount(result.data.length)
+      }
+    } catch (error) {
+      console.error('Failed to load total students:', error)
     }
   }
 
@@ -137,8 +150,8 @@ const Dashboard = () => {
 
   // Calculate percentages
   const totalPresent = stats.totalPresent || 0
-  const totalStudents = stats.totalStudents || 0
-  const presentPercentage = totalStudents ? ((totalPresent / totalStudents) * 100).toFixed(1) : 0
+  const totalStudentsInAttendance = stats.totalStudents || 0
+  const presentPercentage = totalStudentsInAttendance ? ((totalPresent / totalStudentsInAttendance) * 100).toFixed(1) : 0
   const absentPercentage = (100 - presentPercentage).toFixed(1)
 
   const previousMonth = () => {
@@ -365,8 +378,8 @@ const Dashboard = () => {
             </svg>
           </div>
           <div>
-            <h3 className="text-sm font-medium text-gray-600">Total Student</h3>
-            <p className="text-2xl font-bold">{stats.totalStudents}</p>
+            <h3 className="text-sm font-medium text-gray-600">Total Students</h3>
+            <p className="text-2xl font-bold">{studentCount}</p>
           </div>
         </div>
 

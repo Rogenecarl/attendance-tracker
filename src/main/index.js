@@ -7,6 +7,7 @@ import { getDatabasePath } from './database'
 import { setupStudentHandlers } from './handlers/studentHandlers'
 import { setupSectionHandlers } from './handlers/sectionHandlers'
 import { setupAttendanceHandlers } from './handlers/attendanceHandlers'
+import { getStudents } from './database'
 
 function createWindow() {
   // Create the browser window.

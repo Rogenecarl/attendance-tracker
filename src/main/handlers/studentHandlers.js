@@ -6,7 +6,6 @@ export function setupStudentHandlers(ipcMain) {
       const students = await getStudents()
       return { success: true, data: students }
     } catch (error) {
-      console.error('Error getting students:', error)
       return { success: false, error: error.message }
     }
   })
