@@ -8,7 +8,6 @@ const api = {
       const validChannels = [
         'auth:login',
         'auth:register',
-        'get:dbPath',
         'students:get',
         'students:add',
         'students:update',
@@ -17,12 +16,16 @@ const api = {
         'sections:add',
         'sections:update',
         'sections:delete',
-        'students:reset-db'
+        'attendance:get',
+        'attendance:mark',
+        'attendance:getByDateRange',
+        'dashboard:getData',
+        'get:dbPath'
       ]
       if (validChannels.includes(channel)) {
         return ipcRenderer.invoke(channel, data)
       }
-      return Promise.reject(new Error('Invalid channel'))
+      throw new Error('Invalid channel')
     }
   }
 }

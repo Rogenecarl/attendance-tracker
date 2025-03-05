@@ -13,6 +13,7 @@ export function setupAttendanceHandlers(ipcMain) {
 
   ipcMain.handle('attendance:mark', async (event, attendanceData) => {
     try {
+      console.log('Received attendance data:', attendanceData) // Debug log
       const result = await markAttendance(attendanceData)
       return { success: true, data: result }
     } catch (error) {

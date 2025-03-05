@@ -292,16 +292,42 @@ export function getAttendance(month, year, section_id = null) {
 
 // Update markAttendance to handle multiple records
 export function markAttendance(attendanceData) {
+  const { student_id, date, status } = attendanceData
+  
   return new Promise((resolve, reject) => {
-    const { student_id, date, status } = attendanceData
-    
-    db.run(`
-      INSERT OR REPLACE INTO attendance (student_id, date, status)
-      VALUES (?, ?, ?)
-    `, [student_id, date, status ? 1 : 0], function(err) {
-      if (err) reject(err)
-      else resolve({ id: this.lastID })
-    })
+    // First check if an attendance record exists for this date and student
+    db.get(
+      'SELECT id FROM attendance WHERE student_id = ? AND date = ?',
+      [student_id, date],
+      (err, row) => {
+        if (err) {
+          reject(err)
+          return
+        }
+
+        if (row) {
+          // Update existing record
+          db.run(
+            'UPDATE attendance SET status = ? WHERE student_id = ? AND date = ?',
+            [status ? 1 : 0, student_id, date],
+            function(err) {
+              if (err) reject(err)
+              else resolve({ id: row.id, updated: true })
+            }
+          )
+        } else {
+          // Insert new record
+          db.run(
+            'INSERT INTO attendance (student_id, date, status) VALUES (?, ?, ?)',
+            [student_id, date, status ? 1 : 0],
+            function(err) {
+              if (err) reject(err)
+              else resolve({ id: this.lastID, updated: false })
+            }
+          )
+        }
+      }
+    )
   })
 }
 

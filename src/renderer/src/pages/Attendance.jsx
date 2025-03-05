@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns'
+import { toast } from 'react-hot-toast'
 
 const Attendance = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date())
@@ -65,11 +66,12 @@ const Attendance = () => {
         // Convert the attendance data to the format your component expects
         const attendanceMap = {}
         result.data.forEach(record => {
-          if (!attendanceMap[record.student_id]) {
-            attendanceMap[record.student_id] = {}
+          const studentId = record.student_id
+          if (!attendanceMap[studentId]) {
+            attendanceMap[studentId] = {}
           }
           const day = new Date(record.date).getDate()
-          attendanceMap[record.student_id][day] = record.status === 1
+          attendanceMap[studentId][day] = record.status === 1
         })
         setAttendance(attendanceMap)
       }
@@ -78,34 +80,42 @@ const Attendance = () => {
     }
   }
 
-  const handleAttendanceChange = async (studentId, day) => {
+  const handleAttendanceChange = async (studentId, date, isPresent) => {
     try {
-      const date = new Date(
-        selectedMonth.getFullYear(),
-        selectedMonth.getMonth(),
-        day
-      ).toISOString().split('T')[0]
-
-      const newStatus = !attendance[studentId]?.[day]
+      const formattedDate = format(date, 'yyyy-MM-dd')
+      console.log('Marking attendance:', { studentId, date: formattedDate, isPresent }) // Debug log
 
       const result = await window.electron.ipcRenderer.invoke('attendance:mark', {
-        student_id: studentId,
-        date,
-        status: newStatus
+        student_id: parseInt(studentId), // Ensure studentId is a number
+        date: formattedDate,
+        status: isPresent
       })
 
       if (result.success) {
+        // Update local attendance state
         setAttendance(prev => ({
           ...prev,
           [studentId]: {
-            ...prev[studentId],
-            [day]: newStatus
+            ...(prev[studentId] || {}),
+            [date.getDate()]: isPresent
           }
         }))
+        toast.success('Attendance marked successfully')
+        
+        // Optionally refresh the attendance data
+        await loadAttendance()
+      } else {
+        toast.error('Failed to mark attendance')
       }
     } catch (error) {
-      console.error('Failed to mark attendance:', error)
+      console.error('Error marking attendance:', error)
+      toast.error('Failed to mark attendance: ' + error.message)
     }
+  }
+
+  // Helper function to check if a student is present on a specific day
+  const isStudentPresent = (studentId, day) => {
+    return attendance[studentId]?.[day] === true
   }
 
   const filterStudents = () => {
@@ -259,6 +269,21 @@ const Attendance = () => {
     )
   }
 
+  // Add this CheckIcon component
+  const CheckIcon = () => (
+    <svg 
+      className="w-4 h-4 text-blue-600" 
+      fill="currentColor" 
+      viewBox="0 0 20 20"
+    >
+      <path 
+        fillRule="evenodd" 
+        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" 
+        clipRule="evenodd" 
+      />
+    </svg>
+  )
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Attendance</h1>
@@ -317,22 +342,19 @@ const Attendance = () => {
       </div>
 
       {/* Attendance Table */}
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-white rounded-lg shadow overflow-hidden mt-6">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
-                  Student Id
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
+                  Student ID
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-[150px] bg-gray-50 z-10">
                   Name
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-8">
-                  =
-                </th>
                 {[...Array(daysInMonth)].map((_, i) => (
-                  <th key={i + 1} className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-8">
+                  <th key={i + 1} className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
                     {i + 1}
                   </th>
                 ))}
@@ -340,33 +362,42 @@ const Attendance = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredStudents.map((student, idx) => (
-                <tr key={student.id} className={idx % 2 === 0 ? 'bg-blue-50' : ''}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                <tr key={student.id} className={idx % 2 === 0 ? 'bg-gray-50' : ''}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-inherit">
                     {student.student_id}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {student.name}
-                    <span className="text-gray-500 text-xs ml-2">
-                      [{sections.find(s => s.id === student.section_id)?.name || 'No Section'}]
-                      {' '}
-                      {sections.find(s => s.id === student.section_id)?.schedule || ''}
-                    </span>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 sticky left-[150px] bg-inherit">
+                    <div>
+                      {student.name}
+                      <span className="text-gray-500 text-xs ml-2">
+                        [{sections.find(s => s.id === student.section_id)?.name || 'No Section'}]
+                      </span>
+                    </div>
                   </td>
-                  <td className="px-2 py-4 text-center">
-                    <span className="text-sm font-medium">
-                      {Object.values(attendance[student.id] || {}).filter(Boolean).length}
-                    </span>
-                  </td>
-                  {[...Array(daysInMonth)].map((_, i) => (
-                    <td key={i + 1} className="px-2 py-4 text-center">
-                      <input
-                        type="checkbox"
-                        checked={attendance[student.id]?.[i + 1] || false}
-                        onChange={() => handleAttendanceChange(student.id, i + 1)}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      />
-                    </td>
-                  ))}
+                  {[...Array(daysInMonth)].map((_, day) => {
+                    const currentDate = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), day + 1)
+                    const isPresent = isStudentPresent(student.id, day + 1)
+                    
+                    return (
+                      <td key={day + 1} className="px-2 py-4 whitespace-nowrap text-center">
+                        <div className="relative inline-block">
+                          <input
+                            type="checkbox"
+                            checked={isPresent}
+                            onChange={(e) => handleAttendanceChange(student.id, currentDate, e.target.checked)}
+                            className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer ${
+                              isPresent ? 'opacity-0' : 'opacity-100'
+                            }`}
+                          />
+                          {isPresent && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <CheckIcon />
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    )
+                  })}
                 </tr>
               ))}
             </tbody>
