@@ -345,135 +345,165 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <div className="flex items-center gap-4">
-          {/* Month Selector with Calendar */}
-          <div className="relative">
-            <button
-              onClick={() => setShowCalendar(!showCalendar)}
-              className="bg-white px-3 py-2 rounded-lg border flex items-center gap-2"
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header Section */}
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
+            <p className="mt-2 text-sm text-gray-600">Monitor attendance statistics and trends</p>
+          </div>
+          <div className="flex items-center gap-4">
+            {/* Month Selector with Calendar */}
+            <div className="relative">
+              <button
+                onClick={() => setShowCalendar(!showCalendar)}
+                className="bg-white px-4 py-2.5 rounded-lg border border-gray-200 flex items-center gap-2 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span className="text-sm text-gray-700">{format(selectedMonth, 'MMMM yyyy')}</span>
+              </button>
+
+              <Calendar 
+                isOpen={showCalendar} 
+                onClose={() => setShowCalendar(false)} 
+              />
+            </div>
+
+            {/* Section Selector */}
+            <select
+              value={selectedSection}
+              onChange={(e) => setSelectedSection(e.target.value)}
+              className="bg-white px-4 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-700 appearance-none hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span className="text-sm">{format(selectedMonth, 'MMMM yyyy')}</span>
-            </button>
-
-            <Calendar 
-              isOpen={showCalendar} 
-              onClose={() => setShowCalendar(false)} 
-            />
-          </div>
-
-          {/* Section Selector */}
-          <select
-            value={selectedSection}
-            onChange={(e) => setSelectedSection(e.target.value)}
-            className="bg-white px-3 py-2 rounded-lg border text-sm"
-          >
-            <option value="">All Sections</option>
-            {sections.map(section => (
-              <option key={section.id} value={section.id}>
-                [{section.name}] {section.schedule}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Stats Cards - Update to 4 columns */}
-      <div className="grid grid-cols-4 gap-6 mb-6">
-        <div className="bg-blue-50 rounded-lg p-6 flex items-center gap-4">
-          <div className="bg-white p-3 rounded-lg">
-            <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-          </div>
-          <div>
-            <h3 className="text-sm font-medium text-gray-600">Total Sections</h3>
-            <p className="text-2xl font-bold">{totalSections}</p>
+              <option value="">All Sections</option>
+              {sections.map(section => (
+                <option key={section.id} value={section.id}>
+                  [{section.name}] {section.schedule}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
-        <div className="bg-blue-50 rounded-lg p-6 flex items-center gap-4">
-          <div className="bg-white p-3 rounded-lg">
-            <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-          </div>
-          <div>
-            <h3 className="text-sm font-medium text-gray-600">Total Students</h3>
-            <p className="text-2xl font-bold">{studentCount}</p>
-          </div>
-        </div>
-
-        <div className="bg-blue-50 rounded-lg p-6 flex items-center gap-4">
-          <div className="bg-white p-3 rounded-lg">
-            <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <div>
-            <h3 className="text-sm font-medium text-gray-600">Total Present</h3>
-            <p className="text-2xl font-bold">{presentPercentage}%</p>
-          </div>
-        </div>
-
-        <div className="bg-blue-50 rounded-lg p-6 flex items-center gap-4">
-          <div className="bg-white p-3 rounded-lg">
-            <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <div>
-            <h3 className="text-sm font-medium text-gray-600">Total Absent</h3>
-            <p className="text-2xl font-bold">{absentPercentage}%</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Attendance Chart */}
-      <div className="grid grid-cols-3 gap-6">
-        {/* Attendance Chart - Make it span 2 columns */}
-        <div className="col-span-2 bg-white rounded-lg p-6">
-          <h2 className="text-lg font-medium mb-6">Attendance</h2>
-          <div className="h-[400px]">
-            <Bar data={chartData} options={chartOptions} />
-          </div>
-        </div>
-
-        {/* Monthly Statistics */}
-        <div className="bg-white rounded-lg p-6">
-          <h2 className="text-lg font-medium mb-6">Monthly Attendance</h2>
-          <div className="relative h-[300px] flex items-center justify-center">
-            <div className="w-[200px] h-[200px]">
-              <Doughnut data={donutData} options={donutOptions} />
-            </div>
-            {/* Center text */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <div className="text-3xl font-bold text-blue-600">
-                {presentPercentage}%
+        {/* Stats Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* Total Sections Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0 w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
               </div>
-              <div className="text-sm text-gray-500">Present</div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Sections</p>
+                <p className="text-2xl font-bold text-gray-900">{totalSections}</p>
+              </div>
             </div>
           </div>
-          {/* Legend */}
-          <div className="mt-6 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-blue-600"></div>
-                <span className="text-sm text-gray-600">Present</span>
+
+          {/* Total Students Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0 w-12 h-12 bg-indigo-50 rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
               </div>
-              <span className="text-sm font-medium">{presentPercentage}%</span>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Students</p>
+                <p className="text-2xl font-bold text-gray-900">{studentCount}</p>
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-teal-400"></div>
-                <span className="text-sm text-gray-600">Absent</span>
+          </div>
+
+          {/* Present Percentage Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0 w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
               </div>
-              <span className="text-sm font-medium">{absentPercentage}%</span>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Present Rate</p>
+                <p className="text-2xl font-bold text-gray-900">{presentPercentage}%</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Absent Percentage Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0 w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-600">Absent Rate</p>
+                <p className="text-2xl font-bold text-gray-900">{absentPercentage}%</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Charts Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Attendance Chart */}
+          <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold text-gray-900">Daily Attendance</h2>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-blue-600"></div>
+                  <span className="text-sm text-gray-600">Present</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-teal-400"></div>
+                  <span className="text-sm text-gray-600">Absent</span>
+                </div>
+              </div>
+            </div>
+            <div className="h-[400px]">
+              <Bar data={chartData} options={chartOptions} />
+            </div>
+          </div>
+
+          {/* Monthly Statistics */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">Monthly Overview</h2>
+            <div className="relative h-[300px] flex items-center justify-center">
+              <div className="w-[200px] h-[200px]">
+                <Doughnut data={donutData} options={donutOptions} />
+              </div>
+              {/* Center text */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <div className="text-3xl font-bold text-blue-600">
+                  {presentPercentage}%
+                </div>
+                <div className="text-sm text-gray-500">Present</div>
+              </div>
+            </div>
+            {/* Legend */}
+            <div className="mt-6 space-y-4">
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-blue-600"></div>
+                  <span className="text-sm text-gray-700">Present</span>
+                </div>
+                <span className="text-sm font-medium text-gray-900">{presentPercentage}%</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-teal-400"></div>
+                  <span className="text-sm text-gray-700">Absent</span>
+                </div>
+                <span className="text-sm font-medium text-gray-900">{absentPercentage}%</span>
+              </div>
             </div>
           </div>
         </div>

@@ -293,125 +293,139 @@ const Attendance = () => {
   )
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Attendance</h1>
-      
-      {/* Filters Section */}
-      <div className="bg-white rounded-lg p-4 mb-6 flex items-center gap-4">
-        {/* Month Selector */}
-        <div className="relative">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Select Month:</label>
-          <button
-            onClick={() => setShowCalendar(!showCalendar)}
-            className="min-w-[200px] px-4 py-2 border rounded-lg flex items-center justify-between hover:bg-gray-50"
-          >
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span className="text-sm">{format(selectedMonth, 'MMMM yyyy')}</span>
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header Section */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Attendance Tracker</h1>
+          <p className="mt-2 text-sm text-gray-600">Mark and manage student attendance</p>
+        </div>
+
+        {/* Filters Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Month Selector */}
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Month</label>
+              <button
+                onClick={() => setShowCalendar(!showCalendar)}
+                className="w-full bg-white px-4 py-2.5 border border-gray-300 rounded-lg flex items-center justify-between hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span className="text-sm text-gray-700">{format(selectedMonth, 'MMMM yyyy')}</span>
+                </div>
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {/* Calendar Component */}
+              <Calendar 
+                isOpen={showCalendar} 
+                onClose={() => setShowCalendar(false)} 
+              />
             </div>
-            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
 
-          {/* Calendar Component */}
-          <Calendar 
-            isOpen={showCalendar} 
-            onClose={() => setShowCalendar(false)} 
-          />
-        </div>
-
-        {/* Section Selector */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Select Section:</label>
-          <select
-            value={selectedSection}
-            onChange={handleSectionChange}
-            className="min-w-[300px] px-4 py-2 border rounded-lg bg-white"
-          >
-            <option value="">All Sections</option>
-            {sections.map(section => (
-              <option key={section.id} value={section.id}>
-                [{section.name}] {section.schedule}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Search Button */}
-        <button 
-          onClick={loadAttendance}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 mt-6"
-        >
-          Search
-        </button>
-      </div>
-
-      {/* Attendance Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden mt-6">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
-                  Student ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-[150px] bg-gray-50 z-10">
-                  Name
-                </th>
-                {[...Array(daysInMonth)].map((_, i) => (
-                  <th key={i + 1} className="px-2 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
-                    {i + 1}
-                  </th>
+            {/* Section Selector */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Section</label>
+              <select
+                value={selectedSection}
+                onChange={handleSectionChange}
+                className="w-full bg-white px-4 py-2.5 border border-gray-300 rounded-lg appearance-none hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">All Sections</option>
+                {sections.map(section => (
+                  <option key={section.id} value={section.id}>
+                    [{section.name}] {section.schedule}
+                  </option>
                 ))}
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredStudents.map((student, idx) => (
-                <tr key={student.id} className={idx % 2 === 0 ? 'bg-gray-50' : ''}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-inherit">
-                    {student.student_id}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 sticky left-[150px] bg-inherit">
-                    <div>
-                      {student.name}
-                      <span className="text-gray-500 text-xs ml-2">
-                        [{sections.find(s => s.id === student.section_id)?.name || 'No Section'}]
-                      </span>
-                    </div>
-                  </td>
-                  {[...Array(daysInMonth)].map((_, day) => {
-                    const currentDate = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), day + 1)
-                    const isPresent = isStudentPresent(student.id, day + 1)
-                    const isPastDate = currentDate < new Date(new Date().setHours(0, 0, 0, 0))
-                    
-                    return (
-                      <td key={day + 1} className="px-2 py-4 whitespace-nowrap text-center">
-                        <div className="relative inline-block">
-                          <input
-                            type="checkbox"
-                            checked={isPresent}
-                            onChange={(e) => handleAttendanceChange(student.id, currentDate, e.target.checked)}
-                            disabled={isPastDate}
-                            className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer
-                              ${isPastDate ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          />
-                          {isPresent && (
-                            <div className={`absolute inset-0 pointer-events-none flex items-center justify-center
-                              ${isPastDate ? 'opacity-50' : ''}`}>
-                              <CheckIcon />
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                    )
-                  })}
+              </select>
+            </div>
+
+            {/* Search Button */}
+            <div className="flex items-end">
+              <button 
+                onClick={loadAttendance}
+                className="w-full px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Search
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Attendance Table */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10 border-r border-gray-200">
+                    Student ID
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-[150px] bg-gray-50 z-10 border-r border-gray-200">
+                    Name
+                  </th>
+                  {[...Array(daysInMonth)].map((_, i) => (
+                    <th key={i + 1} className="px-3 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-12 border-r border-gray-200 last:border-r-0">
+                      {i + 1}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredStudents.map((student, idx) => (
+                  <tr key={student.id} className={idx % 2 === 0 ? 'bg-gray-50' : ''}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-inherit border-r border-gray-200">
+                      {student.student_id}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 sticky left-[150px] bg-inherit border-r border-gray-200">
+                      <div className="flex flex-col">
+                        <span className="font-medium">{student.name}</span>
+                        <span className="text-xs text-gray-500">
+                          {sections.find(s => s.id === student.section_id)?.name || 'No Section'}
+                        </span>
+                      </div>
+                    </td>
+                    {[...Array(daysInMonth)].map((_, day) => {
+                      const currentDate = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), day + 1)
+                      const isPresent = isStudentPresent(student.id, day + 1)
+                      const isPastDate = currentDate < new Date(new Date().setHours(0, 0, 0, 0))
+                      
+                      return (
+                        <td key={day + 1} className="px-3 py-4 whitespace-nowrap text-center border-r border-gray-200 last:border-r-0">
+                          <div className="relative inline-block">
+                            <input
+                              type="checkbox"
+                              checked={isPresent}
+                              onChange={(e) => handleAttendanceChange(student.id, currentDate, e.target.checked)}
+                              disabled={isPastDate}
+                              className={`h-5 w-5 rounded border-gray-300 text-blue-600 transition-colors
+                                focus:ring-blue-500 focus:ring-offset-0 cursor-pointer
+                                ${isPastDate ? 'opacity-50 cursor-not-allowed' : 'hover:border-blue-500'}`}
+                            />
+                            {isPresent && (
+                              <div className={`absolute inset-0 pointer-events-none flex items-center justify-center
+                                ${isPastDate ? 'opacity-50' : ''}`}>
+                                <CheckIcon />
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      )
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
