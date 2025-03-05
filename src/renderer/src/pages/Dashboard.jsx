@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns'
-import { Bar, Doughnut } from 'react-chartjs-2'
+import { Line, Doughnut } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  BarElement,
+  PointElement,
+  LineElement,
   Title,
   Tooltip,
   Legend,
@@ -16,7 +17,8 @@ import {
 ChartJS.register(
   CategoryScale,
   LinearScale,
-  BarElement,
+  PointElement,
+  LineElement,
   Title,
   Tooltip,
   Legend,
@@ -113,16 +115,28 @@ const Dashboard = () => {
       {
         label: 'Present',
         data: attendanceData.map(data => data.present),
-        backgroundColor: 'rgb(59, 130, 246)',
-        barPercentage: 0.6,
-        categoryPercentage: 0.7
+        borderColor: 'rgb(59, 130, 246)',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointBackgroundColor: 'rgb(59, 130, 246)',
+        pointBorderColor: 'white',
+        pointBorderWidth: 2
       },
       {
         label: 'Absent',
         data: attendanceData.map(data => data.absent),
-        backgroundColor: 'rgb(45, 212, 191)',
-        barPercentage: 0.6,
-        categoryPercentage: 0.7
+        borderColor: 'rgb(45, 212, 191)',
+        backgroundColor: 'rgba(45, 212, 191, 0.1)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointBackgroundColor: 'rgb(45, 212, 191)',
+        pointBorderColor: 'white',
+        pointBorderWidth: 2
       }
     ]
   }
@@ -140,7 +154,7 @@ const Dashboard = () => {
           }
         },
         grid: {
-          color: 'rgba(0, 0, 0, 0.1)',
+          color: 'rgba(0, 0, 0, 0.05)',
           drawBorder: false
         }
       },
@@ -157,16 +171,29 @@ const Dashboard = () => {
     },
     plugins: {
       legend: {
-        position: 'bottom',
+        position: 'top',
+        align: 'end',
         labels: {
           boxWidth: 12,
+          boxHeight: 12,
           padding: 15,
+          usePointStyle: true,
+          pointStyle: 'circle',
           font: {
-            size: 12
+            size: 12,
+            weight: '500'
           }
         }
       },
       tooltip: {
+        backgroundColor: 'white',
+        titleColor: '#1f2937',
+        bodyColor: '#1f2937',
+        borderColor: 'rgba(0, 0, 0, 0.1)',
+        borderWidth: 1,
+        padding: 12,
+        boxPadding: 6,
+        usePointStyle: true,
         callbacks: {
           label: function(context) {
             const label = context.dataset.label || '';
@@ -176,6 +203,15 @@ const Dashboard = () => {
             return `${label}: ${value} (${percentage}%)`;
           }
         }
+      }
+    },
+    interaction: {
+      intersect: false,
+      mode: 'index'
+    },
+    elements: {
+      line: {
+        borderWidth: 2
       }
     }
   }
@@ -469,7 +505,7 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="h-[400px]">
-              <Bar data={chartData} options={chartOptions} />
+              <Line data={chartData} options={chartOptions} />
             </div>
           </div>
 
