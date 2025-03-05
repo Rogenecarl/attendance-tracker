@@ -11,6 +11,8 @@ const Attendance = () => {
   const [showCalendar, setShowCalendar] = useState(false)
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [filteredStudents, setFilteredStudents] = useState([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const studentsPerPage = 20
 
   // Get number of days in selected month
   const daysInMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate()
@@ -381,7 +383,9 @@ const Attendance = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredStudents.map((student, idx) => (
+                {filteredStudents
+                  .slice((currentPage - 1) * studentsPerPage, currentPage * studentsPerPage)
+                  .map((student, idx) => (
                   <tr key={student.id} className={idx % 2 === 0 ? 'bg-gray-50' : ''}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-inherit border-r border-gray-200">
                       {student.student_id}
@@ -426,6 +430,104 @@ const Attendance = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {filteredStudents.length > 0 && (
+            <div className="px-6 py-4 bg-white border-t border-gray-200">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-center text-sm text-gray-500">
+                  <span>
+                    Showing{' '}
+                    <span className="font-medium text-gray-900">
+                      {Math.min((currentPage - 1) * studentsPerPage + 1, filteredStudents.length)}
+                    </span>{' '}
+                    to{' '}
+                    <span className="font-medium text-gray-900">
+                      {Math.min(currentPage * studentsPerPage, filteredStudents.length)}
+                    </span>{' '}
+                    of{' '}
+                    <span className="font-medium text-gray-900">
+                      {filteredStudents.length}
+                    </span> students
+                  </span>
+                </div>
+
+                <nav className="flex items-center justify-center">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className={`p-2 rounded-lg transition-colors ${
+                        currentPage === 1
+                          ? 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                          : 'text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+                      }`}
+                      aria-label="Previous page"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      {[...Array(Math.ceil(filteredStudents.length / studentsPerPage))].map((_, index) => {
+                        const pageNumber = index + 1;
+                        const isCurrentPage = pageNumber === currentPage;
+                        const isNearCurrentPage = Math.abs(pageNumber - currentPage) <= 1;
+                        const isFirstPage = pageNumber === 1;
+                        const isLastPage = pageNumber === Math.ceil(filteredStudents.length / studentsPerPage);
+
+                        if (isNearCurrentPage || isFirstPage || isLastPage) {
+                          return (
+                            <button
+                              key={pageNumber}
+                              onClick={() => setCurrentPage(pageNumber)}
+                              className={`min-w-[40px] h-10 px-3.5 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                isCurrentPage
+                                  ? 'bg-blue-600 text-white focus:ring-blue-500'
+                                  : 'text-gray-500 hover:bg-gray-100 focus:ring-gray-500'
+                              }`}
+                              aria-label={`Page ${pageNumber}`}
+                              aria-current={isCurrentPage ? 'page' : undefined}
+                            >
+                              {pageNumber}
+                            </button>
+                          );
+                        } else if (
+                          (pageNumber === currentPage - 2 && currentPage > 3) ||
+                          (pageNumber === currentPage + 2 && currentPage < Math.ceil(filteredStudents.length / studentsPerPage) - 2)
+                        ) {
+                          return (
+                            <span key={pageNumber} className="px-2 text-gray-400" aria-hidden="true">
+                              •••
+                            </span>
+                          );
+                        }
+                        return null;
+                      })}
+                    </div>
+
+                    <button
+                      onClick={() => setCurrentPage(prev => 
+                        Math.min(prev + 1, Math.ceil(filteredStudents.length / studentsPerPage))
+                      )}
+                      disabled={currentPage === Math.ceil(filteredStudents.length / studentsPerPage)}
+                      className={`p-2 rounded-lg transition-colors ${
+                        currentPage === Math.ceil(filteredStudents.length / studentsPerPage)
+                          ? 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                          : 'text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+                      }`}
+                      aria-label="Next page"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                </nav>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

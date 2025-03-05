@@ -17,6 +17,8 @@ const Students = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [studentToDelete, setStudentToDelete] = useState(null)
   const [successMessage, setSuccessMessage] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const studentsPerPage = 20
 
   useEffect(() => {
     loadStudents()
@@ -198,6 +200,7 @@ const Students = () => {
                   student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                   student.student_id.toLowerCase().includes(searchQuery.toLowerCase())
                 )
+                .slice((currentPage - 1) * studentsPerPage, currentPage * studentsPerPage)
                 .map((student) => (
                   <tr key={student.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -240,6 +243,125 @@ const Students = () => {
                 ))}
             </tbody>
           </table>
+
+          {/* Pagination */}
+          {students.length > 0 && (
+            <div className="px-6 py-4 bg-white border-t border-gray-200">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-center text-sm text-gray-500">
+                  <span>
+                    Showing{' '}
+                    <span className="font-medium text-gray-900">
+                      {Math.min((currentPage - 1) * studentsPerPage + 1, students.length)}
+                    </span>{' '}
+                    to{' '}
+                    <span className="font-medium text-gray-900">
+                      {Math.min(currentPage * studentsPerPage, students.length)}
+                    </span>{' '}
+                    of{' '}
+                    <span className="font-medium text-gray-900">
+                      {students.filter(student =>
+                        student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        student.student_id.toLowerCase().includes(searchQuery.toLowerCase())
+                      ).length}
+                    </span> students
+                  </span>
+                </div>
+
+                <nav className="flex items-center justify-center">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className={`p-2 rounded-lg transition-colors ${
+                        currentPage === 1
+                          ? 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                          : 'text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+                      }`}
+                      aria-label="Previous page"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      {[...Array(Math.ceil(students.filter(student =>
+                        student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        student.student_id.toLowerCase().includes(searchQuery.toLowerCase())
+                      ).length / studentsPerPage))].map((_, index) => {
+                        const pageNumber = index + 1;
+                        const isCurrentPage = pageNumber === currentPage;
+                        const isNearCurrentPage = Math.abs(pageNumber - currentPage) <= 1;
+                        const isFirstPage = pageNumber === 1;
+                        const isLastPage = pageNumber === Math.ceil(students.filter(student =>
+                          student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          student.student_id.toLowerCase().includes(searchQuery.toLowerCase())
+                        ).length / studentsPerPage);
+
+                        if (isNearCurrentPage || isFirstPage || isLastPage) {
+                          return (
+                            <button
+                              key={pageNumber}
+                              onClick={() => setCurrentPage(pageNumber)}
+                              className={`min-w-[40px] h-10 px-3.5 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                isCurrentPage
+                                  ? 'bg-blue-600 text-white focus:ring-blue-500'
+                                  : 'text-gray-500 hover:bg-gray-100 focus:ring-gray-500'
+                              }`}
+                              aria-label={`Page ${pageNumber}`}
+                              aria-current={isCurrentPage ? 'page' : undefined}
+                            >
+                              {pageNumber}
+                            </button>
+                          );
+                        } else if (
+                          (pageNumber === currentPage - 2 && currentPage > 3) ||
+                          (pageNumber === currentPage + 2 && currentPage < Math.ceil(students.filter(student =>
+                            student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            student.student_id.toLowerCase().includes(searchQuery.toLowerCase())
+                          ).length / studentsPerPage) - 2)
+                        ) {
+                          return (
+                            <span key={pageNumber} className="px-2 text-gray-400" aria-hidden="true">
+                              •••
+                            </span>
+                          );
+                        }
+                        return null;
+                      })}
+                    </div>
+
+                    <button
+                      onClick={() => setCurrentPage(prev => 
+                        Math.min(prev + 1, Math.ceil(students.filter(student =>
+                          student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          student.student_id.toLowerCase().includes(searchQuery.toLowerCase())
+                        ).length / studentsPerPage))
+                      )}
+                      disabled={currentPage === Math.ceil(students.filter(student =>
+                        student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        student.student_id.toLowerCase().includes(searchQuery.toLowerCase())
+                      ).length / studentsPerPage)}
+                      className={`p-2 rounded-lg transition-colors ${
+                        currentPage === Math.ceil(students.filter(student =>
+                          student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          student.student_id.toLowerCase().includes(searchQuery.toLowerCase())
+                        ).length / studentsPerPage)
+                          ? 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                          : 'text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+                      }`}
+                      aria-label="Next page"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                </nav>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Add/Edit Modal */}
