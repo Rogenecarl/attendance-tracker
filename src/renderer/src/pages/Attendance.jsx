@@ -364,76 +364,78 @@ const Attendance = () => {
         </div>
 
         {/* Attendance Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10 border-r border-gray-200">
-                    Student ID
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-[150px] bg-gray-50 z-10 border-r border-gray-200">
-                    Name
-                  </th>
-                  {[...Array(daysInMonth)].map((_, i) => (
-                    <th key={i + 1} className="px-3 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-12 border-r border-gray-200 last:border-r-0">
-                      {i + 1}
+            <div className="inline-block min-w-full align-middle">
+              <table className="min-w-full divide-y divide-gray-200 table-fixed">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="w-32 px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10 border-r border-gray-200">
+                      Student ID
                     </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredStudents
-                  .slice((currentPage - 1) * studentsPerPage, currentPage * studentsPerPage)
-                  .map((student, idx) => (
-                  <tr key={student.id} className={idx % 2 === 0 ? 'bg-gray-50' : ''}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-inherit border-r border-gray-200">
-                      {student.student_id}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 sticky left-[150px] bg-inherit border-r border-gray-200">
-                      <div className="flex flex-col">
-                        <span className="font-medium">{student.name}</span>
-                        <span className="text-xs text-gray-500">
-                          {sections.find(s => s.id === student.section_id)?.name || 'No Section'}
-                        </span>
-                      </div>
-                    </td>
-                    {[...Array(daysInMonth)].map((_, day) => {
-                      const currentDate = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), day + 1)
-                      const isPresent = isStudentPresent(student.id, day + 1)
-                      const isPastDate = currentDate < new Date(new Date().setHours(0, 0, 0, 0))
-                      
-                      return (
-                        <td key={day + 1} className="px-3 py-4 whitespace-nowrap text-center border-r border-gray-200 last:border-r-0">
-                          <div className="relative inline-block">
-                            <input
-                              type="checkbox"
-                              checked={isPresent}
-                              onChange={(e) => handleAttendanceChange(student.id, currentDate, e.target.checked)}
-                              disabled={isPastDate}
-                              className={`h-5 w-5 rounded border-gray-300 text-blue-600 transition-colors
-                                focus:ring-blue-500 focus:ring-offset-0 cursor-pointer
-                                ${isPastDate ? 'opacity-50 cursor-not-allowed' : 'hover:border-blue-500'}`}
-                            />
-                            {isPresent && (
-                              <div className={`absolute inset-0 pointer-events-none flex items-center justify-center
-                                ${isPastDate ? 'opacity-50' : ''}`}>
-                                <CheckIcon />
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                      )
-                    })}
+                    <th className="w-48 px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-32 bg-gray-50 z-10 border-r border-gray-200">
+                      Name
+                    </th>
+                    {[...Array(daysInMonth)].map((_, i) => (
+                      <th key={i + 1} className="w-16 px-2 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200 last:border-r-0">
+                        {i + 1}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredStudents
+                    .slice((currentPage - 1) * studentsPerPage, currentPage * studentsPerPage)
+                    .map((student, idx) => (
+                    <tr key={student.id} className={idx % 2 === 0 ? 'bg-gray-50' : ''}>
+                      <td className="w-32 px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-inherit border-r border-gray-200">
+                        {student.student_id}
+                      </td>
+                      <td className="w-48 px-4 py-3 whitespace-nowrap text-sm text-gray-900 sticky left-32 bg-inherit border-r border-gray-200">
+                        <div className="flex flex-col">
+                          <span className="font-medium truncate">{student.name}</span>
+                          <span className="text-xs text-gray-500 truncate">
+                            {sections.find(s => s.id === student.section_id)?.name || 'No Section'}
+                          </span>
+                        </div>
+                      </td>
+                      {[...Array(daysInMonth)].map((_, day) => {
+                        const currentDate = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), day + 1)
+                        const isPresent = isStudentPresent(student.id, day + 1)
+                        const isPastDate = currentDate < new Date(new Date().setHours(0, 0, 0, 0))
+                        
+                        return (
+                          <td key={day + 1} className="w-16 px-2 py-3 whitespace-nowrap text-center border-r border-gray-200 last:border-r-0">
+                            <div className="relative inline-block">
+                              <input
+                                type="checkbox"
+                                checked={isPresent}
+                                onChange={(e) => handleAttendanceChange(student.id, currentDate, e.target.checked)}
+                                disabled={isPastDate}
+                                className={`h-4 w-4 rounded border-gray-300 text-blue-600 transition-colors
+                                  focus:ring-blue-500 focus:ring-offset-0 cursor-pointer
+                                  ${isPastDate ? 'opacity-50 cursor-not-allowed' : 'hover:border-blue-500'}`}
+                              />
+                              {isPresent && (
+                                <div className={`absolute inset-0 pointer-events-none flex items-center justify-center
+                                  ${isPastDate ? 'opacity-50' : ''}`}>
+                                  <CheckIcon />
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {/* Pagination */}
           {filteredStudents.length > 0 && (
-            <div className="px-6 py-4 bg-white border-t border-gray-200">
+            <div className="px-4 sm:px-6 py-4 bg-white border-t border-gray-200">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center text-sm text-gray-500">
                   <span>
