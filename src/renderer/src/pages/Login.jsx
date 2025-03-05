@@ -54,11 +54,12 @@ const Login = () => {
   }
 
   return (
-    <div className="bg-white py-8 px-6 shadow-lg rounded-lg sm:px-10">
-      <h2 className="mb-6 text-center text-3xl font-extrabold text-gray-900">
-        Sign in to your account
-      </h2>
-      
+    <div className="p-8">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-semibold text-gray-800">Welcome Back</h2>
+        <p className="text-sm text-gray-500 mt-1">Sign in to your account to continue</p>
+      </div>
+
       {location.state?.registrationSuccess && (
         <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded text-center">
           Account created successfully! Please log in.
@@ -70,79 +71,66 @@ const Login = () => {
           {error}
         </div>
       )}
-      <form className="space-y-6" onSubmit={handleSubmit}>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-            Email address
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            Email Address
           </label>
-          <div className="mt-1">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+              </svg>
+            </div>
             <input
-              id="email"
-              name="email"
               type="email"
               value={formData.email}
-              onChange={handleChange}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               required
-              className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="w-full pl-12 pr-4 py-2.5 text-sm text-gray-900 bg-gray-50/50 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              placeholder="Enter your email"
             />
           </div>
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">
             Password
           </label>
-          <div className="mt-1">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
             <input
-              id="password"
-              name="password"
               type="password"
               value={formData.password}
-              onChange={handleChange}
-              autoComplete="current-password"
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               required
-              className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="w-full pl-12 pr-4 py-2.5 text-sm text-gray-900 bg-gray-50/50 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              placeholder="Enter your password"
             />
           </div>
         </div>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <input
-              id="remember-me"
-              name="remember-me"
-              type="checkbox"
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-              Remember me
-            </label>
-          </div>
+        <button
+          type="submit"
+          className="w-full py-2.5 px-4 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-lg shadow-blue-500/20 transition-all duration-200"
+        >
+          Sign In
+        </button>
 
-          <div className="text-sm">
-            <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
-              Forgot your password?
-            </a>
-          </div>
-        </div>
-
-        <div>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        <div className="text-center">
+          <Link
+            to="/signup"
+            className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
           >
-            {isLoading ? 'Signing in...' : 'Sign in'}
-          </button>
+            Don't have an account? Sign up
+          </Link>
         </div>
       </form>
-
-      <div className="mt-6 text-center text-sm">
-        <span className="text-gray-600">Don't have an account?</span>
-        <Link to="/signup" className="ml-1 font-medium text-blue-600 hover:text-blue-500">
-          Sign up
-        </Link>
-      </div>
     </div>
   )
 }
