@@ -266,26 +266,38 @@ export function resetDatabase() {
 // Update getAttendance to include student info
 export function getAttendance(month, year, section_id = null) {
   return new Promise((resolve, reject) => {
+    console.log('Getting attendance for:', { month, year, section_id })
+    
     let query = `
       SELECT 
         a.*,
         s.name as student_name,
-        s.student_id,
+        s.student_id as student_code,
+        s.id as student_id,
         s.section_id
       FROM attendance a
       JOIN students s ON a.student_id = s.id
-      WHERE strftime('%m-%Y', a.date) = ?
+      WHERE strftime('%m', date) = ? AND strftime('%Y', date) = ?
     `
-    const params = [`${month}-${year}`]
+    const params = [month, year]
 
     if (section_id) {
       query += ' AND s.section_id = ?'
       params.push(section_id)
     }
 
+    console.log('Attendance query:', query)
+    console.log('Query params:', params)
+
     db.all(query, params, (err, rows) => {
-      if (err) reject(err)
-      else resolve(rows)
+      if (err) {
+        console.error('Error getting attendance:', err)
+        reject(err)
+        return
+      }
+      
+      console.log('Found attendance records:', rows)
+      resolve(rows)
     })
   })
 }
@@ -360,44 +372,85 @@ export function getAttendanceByDateRange(startDate, endDate, section_id = null) 
 
 export function getAttendanceStats(month, year, section_id = null) {
   return new Promise((resolve, reject) => {
+    console.log('getAttendanceStats called with:', { month, year, section_id })
+    
     let query = `
-      SELECT 
-        COUNT(DISTINCT s.id) as total_students,
-        COUNT(DISTINCT CASE WHEN a.status = 1 THEN s.id END) as total_present,
-        COUNT(DISTINCT CASE WHEN a.status = 0 THEN s.id END) as total_absent,
-        a.date,
-        COUNT(CASE WHEN a.status = 1 THEN 1 END) as present_count,
-        COUNT(CASE WHEN a.status = 0 THEN 1 END) as absent_count
-      FROM students s
-      LEFT JOIN attendance a ON s.id = a.student_id
-      WHERE strftime('%m-%Y', a.date) = ?
+      WITH MonthDays AS (
+        SELECT date(?, '+' || (num-1) || ' days') as date
+        FROM (
+          SELECT 1 + (ROW_NUMBER() OVER ())-1 AS num 
+          FROM attendance 
+          LIMIT ?
+        )
+      ),
+      StudentAttendance AS (
+        SELECT 
+          s.id as student_id,
+          md.date,
+          COALESCE(a.status, 0) as status
+        FROM students s
+        CROSS JOIN MonthDays md
+        LEFT JOIN attendance a ON s.id = a.student_id AND md.date = a.date
+        WHERE 1=1
     `
-    const params = [`${month}-${year}`]
+
+    const daysInMonth = new Date(year, month, 0).getDate()
+    const firstDayOfMonth = `${year}-${month.padStart(2, '0')}-01`
+    const params = [firstDayOfMonth, daysInMonth]
+
+    console.log('Query parameters:', { daysInMonth, firstDayOfMonth, params })
 
     if (section_id) {
       query += ' AND s.section_id = ?'
       params.push(section_id)
     }
 
-    query += ' GROUP BY a.date'
+    query += `
+      )
+      SELECT 
+        date,
+        COUNT(DISTINCT student_id) as total_students,
+        SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) as present_count,
+        SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) as absent_count
+      FROM StudentAttendance
+      GROUP BY date
+      ORDER BY date
+    `
+
+    console.log('Final SQL query:', query)
 
     db.all(query, params, (err, rows) => {
-      if (err) reject(err)
-      else {
-        const stats = {
-          totalStudents: rows[0]?.total_students || 0,
-          totalPresent: rows[0]?.total_present || 0,
-          totalAbsent: rows[0]?.total_absent || 0
-        }
-        resolve({
-          stats,
-          attendanceData: rows.map(row => ({
-            date: row.date,
-            present: row.present_count,
-            absent: row.absent_count
-          }))
-        })
+      if (err) {
+        console.error('Database error:', err)
+        reject(err)
+        return
       }
+
+      console.log('Raw database results:', rows)
+
+      // Calculate overall statistics
+      const totalDays = rows.length
+      const totalStudents = rows[0]?.total_students || 0
+      const totalPossibleAttendance = totalStudents * totalDays
+      const totalPresent = rows.reduce((sum, row) => sum + row.present_count, 0)
+      
+      const stats = {
+        totalStudents,
+        totalPresent,
+        totalAbsent: totalPossibleAttendance - totalPresent,
+        attendanceRate: totalPossibleAttendance > 0 ? (totalPresent / totalPossibleAttendance * 100).toFixed(1) : 0
+      }
+
+      console.log('Calculated stats:', stats)
+
+      resolve({
+        stats,
+        attendanceData: rows.map(row => ({
+          date: row.date,
+          present: row.present_count,
+          absent: row.absent_count
+        }))
+      })
     })
   })
 } 

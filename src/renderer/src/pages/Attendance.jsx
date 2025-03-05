@@ -56,6 +56,8 @@ const Attendance = () => {
       const month = format(selectedMonth, 'MM')
       const year = format(selectedMonth, 'yyyy')
       
+      console.log('Loading attendance for:', { month, year, section_id: selectedSection })
+
       const result = await window.electron.ipcRenderer.invoke('attendance:get', {
         month,
         year,
@@ -63,6 +65,8 @@ const Attendance = () => {
       })
 
       if (result.success) {
+        console.log('Received attendance data:', result.data)
+        
         // Convert the attendance data to the format your component expects
         const attendanceMap = {}
         result.data.forEach(record => {
@@ -73,7 +77,11 @@ const Attendance = () => {
           const day = new Date(record.date).getDate()
           attendanceMap[studentId][day] = record.status === 1
         })
+
+        console.log('Processed attendance map:', attendanceMap)
         setAttendance(attendanceMap)
+      } else {
+        console.error('Failed to load attendance:', result.error)
       }
     } catch (error) {
       console.error('Failed to load attendance:', error)
@@ -93,17 +101,17 @@ const Attendance = () => {
 
       if (result.success) {
         // Update local attendance state
-        setAttendance(prev => ({
-          ...prev,
-          [studentId]: {
-            ...(prev[studentId] || {}),
-            [date.getDate()]: isPresent
+        setAttendance(prev => {
+          const dayOfMonth = date.getDate()
+          return {
+            ...prev,
+            [studentId]: {
+              ...(prev[studentId] || {}),
+              [dayOfMonth]: isPresent
+            }
           }
-        }))
+        })
         toast.success('Attendance marked successfully')
-        
-        // Optionally refresh the attendance data
-        await loadAttendance()
       } else {
         toast.error('Failed to mark attendance')
       }
@@ -385,12 +393,10 @@ const Attendance = () => {
                             type="checkbox"
                             checked={isPresent}
                             onChange={(e) => handleAttendanceChange(student.id, currentDate, e.target.checked)}
-                            className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer ${
-                              isPresent ? 'opacity-0' : 'opacity-100'
-                            }`}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
                           />
                           {isPresent && (
-                            <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                               <CheckIcon />
                             </div>
                           )}

@@ -30,13 +30,23 @@ const Dashboard = () => {
   const [stats, setStats] = useState({
     totalStudents: 0,
     totalPresent: 0,
-    totalAbsent: 0
+    totalAbsent: 0,
+    attendanceRate: 0
   })
   const [attendanceData, setAttendanceData] = useState([])
   const [showCalendar, setShowCalendar] = useState(false)
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [totalSections, setTotalSections] = useState(0)
   const [studentCount, setStudentCount] = useState(0)
+
+  // Get number of days in selected month
+  const daysInMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate()
+
+  // Calculate percentages
+  const totalPresent = stats.totalPresent || 0
+  const totalPossibleAttendance = stats.totalStudents * daysInMonth || 0
+  const presentPercentage = stats.attendanceRate || 0
+  const absentPercentage = (100 - presentPercentage).toFixed(1)
 
   useEffect(() => {
     loadSections()
@@ -58,15 +68,27 @@ const Dashboard = () => {
 
   const loadDashboardData = async () => {
     try {
+      const month = format(selectedMonth, 'MM')
+      const year = format(selectedMonth, 'yyyy')
+      const section_id = selectedSection || null
+
+      console.log('Requesting dashboard data:', { month, year, section_id })
+
       const result = await window.electron.ipcRenderer.invoke('dashboard:getData', {
-        month: format(selectedMonth, 'MM'),
-        year: format(selectedMonth, 'yyyy'),
-        section_id: selectedSection
+        month,
+        year,
+        section_id
       })
 
+      console.log('Dashboard data response:', result)
+
       if (result.success) {
+        console.log('Setting stats:', result.data.stats)
+        console.log('Setting attendance data:', result.data.attendanceData)
         setStats(result.data.stats)
         setAttendanceData(result.data.attendanceData)
+      } else {
+        console.error('Failed to load dashboard data:', result.error)
       }
     } catch (error) {
       console.error('Failed to load dashboard data:', error)
@@ -86,18 +108,18 @@ const Dashboard = () => {
 
   // Update chart data to use real data
   const chartData = {
-    labels: attendanceData.map(data => format(new Date(data.date), 'd')).reverse(),
+    labels: attendanceData.map(data => format(new Date(data.date), 'd')),
     datasets: [
       {
-        label: 'Total Present',
-        data: attendanceData.map(data => data.present).reverse(),
+        label: 'Present',
+        data: attendanceData.map(data => data.present),
         backgroundColor: 'rgb(59, 130, 246)',
         barPercentage: 0.6,
         categoryPercentage: 0.7
       },
       {
-        label: 'Total Absent',
-        data: attendanceData.map(data => data.absent).reverse(),
+        label: 'Absent',
+        data: attendanceData.map(data => data.absent),
         backgroundColor: 'rgb(45, 212, 191)',
         barPercentage: 0.6,
         categoryPercentage: 0.7
@@ -111,9 +133,8 @@ const Dashboard = () => {
     scales: {
       y: {
         beginAtZero: true,
-        max: 12,
         ticks: {
-          stepSize: 3,
+          stepSize: 1,
           font: {
             size: 12
           }
@@ -144,15 +165,20 @@ const Dashboard = () => {
             size: 12
           }
         }
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            const label = context.dataset.label || '';
+            const value = context.parsed.y;
+            const total = stats.totalStudents;
+            const percentage = ((value / total) * 100).toFixed(1);
+            return `${label}: ${value} (${percentage}%)`;
+          }
+        }
       }
     }
   }
-
-  // Calculate percentages
-  const totalPresent = stats.totalPresent || 0
-  const totalStudentsInAttendance = stats.totalStudents || 0
-  const presentPercentage = totalStudentsInAttendance ? ((totalPresent / totalStudentsInAttendance) * 100).toFixed(1) : 0
-  const absentPercentage = (100 - presentPercentage).toFixed(1)
 
   const previousMonth = () => {
     setCurrentMonth(subMonths(currentMonth, 1))
@@ -347,10 +373,10 @@ const Dashboard = () => {
             onChange={(e) => setSelectedSection(e.target.value)}
             className="bg-white px-3 py-2 rounded-lg border text-sm"
           >
-            <option value="">5th</option>
+            <option value="">All Sections</option>
             {sections.map(section => (
               <option key={section.id} value={section.id}>
-                {section.name}
+                [{section.name}] {section.schedule}
               </option>
             ))}
           </select>
