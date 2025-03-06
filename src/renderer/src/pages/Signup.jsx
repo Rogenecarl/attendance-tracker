@@ -4,20 +4,50 @@ import { useAuth } from '../context/AuthContext'
 
 const Signup = () => {
   const navigate = useNavigate()
-  const { register } = useAuth()
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     password_confirmation: ''
   })
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const success = await register(formData)
-    if (success) {
-      navigate('/login', { state: { registrationSuccess: true } })
+    setError('')
+    setLoading(true)
+
+    // Validate password confirmation
+    if (formData.password !== formData.password_confirmation) {
+      setError('Passwords do not match')
+      setLoading(false)
+      return
     }
+
+    // Basic email validation
+    const emailRegex = /\S+@\S+\.\S+/
+    if (!emailRegex.test(formData.email)) {
+      setError('Please enter a valid email address')
+      setLoading(false)
+      return
+    }
+
+    try {
+      // Use electron's ipcRenderer for registration as in the working code
+      const result = await window.electron.ipcRenderer.invoke('auth:register', formData)
+
+      // Handle registration response
+      if (result.success) {
+        navigate('/login', { state: { registrationSuccess: true } })
+      } else {
+        setError(result.error || 'An error occurred during registration')
+      }
+    } catch (err) {
+      setError('An error occurred during registration')
+    }
+
+    setLoading(false)
   }
 
   return (
@@ -26,6 +56,12 @@ const Signup = () => {
         <h2 className="text-2xl font-semibold text-gray-800">Create Account</h2>
         <p className="text-sm text-gray-500 mt-1">Sign up to get started with Attendance Tracker</p>
       </div>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+          {error}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
@@ -114,9 +150,10 @@ const Signup = () => {
 
         <button
           type="submit"
-          className="w-full py-2.5 px-4 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-lg shadow-blue-500/20 transition-all duration-200"
+          className={`w-full py-2.5 px-4 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-lg shadow-blue-500/20 transition-all duration-200 ${loading ? 'bg-gray-400 cursor-not-allowed' : ''}`}
+          disabled={loading}
         >
-          Create Account
+          {loading ? 'Creating Account...' : 'Create Account'}
         </button>
 
         <div className="text-center">
@@ -133,5 +170,3 @@ const Signup = () => {
 }
 
 export default Signup
-
-
