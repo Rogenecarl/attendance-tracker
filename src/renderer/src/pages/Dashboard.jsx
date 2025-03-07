@@ -12,6 +12,8 @@ import {
   Legend,
   ArcElement
 } from 'chart.js'
+import { useAuth } from '../context/AuthContext'
+import toast from 'react-hot-toast'
 
 // Register ChartJS components
 ChartJS.register(
@@ -30,81 +32,62 @@ const Dashboard = () => {
   const [selectedSection, setSelectedSection] = useState('')
   const [sections, setSections] = useState([])
   const [stats, setStats] = useState({
-    totalStudents: 0,
-    totalPresent: 0,
-    totalAbsent: 0,
-    attendanceRate: 0
+    studentCount: 0,
+    attendanceToday: {
+      total: 0,
+      present: 0,
+      absent: 0
+    },
+    sections: 0
   })
   const [attendanceData, setAttendanceData] = useState([])
   const [showCalendar, setShowCalendar] = useState(false)
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [totalSections, setTotalSections] = useState(0)
-  const [studentCount, setStudentCount] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
+  const { user } = useAuth()
 
   // Get number of days in selected month
   const daysInMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate()
 
   // Calculate percentages
-  const totalPresent = stats.totalPresent || 0
-  const totalPossibleAttendance = stats.totalStudents * daysInMonth || 0
-  const presentPercentage = stats.attendanceRate || 0
+  const totalPresent = stats.attendanceToday.present || 0
+  const totalPossibleAttendance = stats.attendanceToday.total || 0
+  const presentPercentage = stats.attendanceToday.present ? ((totalPresent / totalPossibleAttendance) * 100).toFixed(1) : '0.0'
   const absentPercentage = (100 - presentPercentage).toFixed(1)
 
   useEffect(() => {
-    loadSections()
-    loadDashboardData()
-    loadTotalStudents()
-  }, [selectedMonth, selectedSection])
-
-  const loadSections = async () => {
-    try {
-      const result = await window.electron.ipcRenderer.invoke('sections:get')
-      if (result.success) {
-        setSections(result.data)
-        setTotalSections(result.data.length)
-      }
-    } catch (error) {
-      console.error('Failed to load sections:', error)
+    if (user?.id) {
+      loadDashboardData()
     }
-  }
+  }, [user])
 
   const loadDashboardData = async () => {
     try {
-      const month = format(selectedMonth, 'MM')
-      const year = format(selectedMonth, 'yyyy')
-      const section_id = selectedSection || null
-
-      console.log('Requesting dashboard data:', { month, year, section_id })
-
-      const result = await window.electron.ipcRenderer.invoke('dashboard:getData', {
-        month,
-        year,
-        section_id
+      const response = await window.api.invoke('dashboard:getData', {
+        teacher_id: user.id
       })
 
-      console.log('Dashboard data response:', result)
-
-      if (result.success) {
-        console.log('Setting stats:', result.data.stats)
-        console.log('Setting attendance data:', result.data.attendanceData)
-        setStats(result.data.stats)
-        setAttendanceData(result.data.attendanceData)
+      if (response.success) {
+        const { total_students, total_sections, present_today, total_today } = response.data
+        setStats({
+          studentCount: total_students || 0,
+          attendanceToday: {
+            total: total_today || 0,
+            present: present_today || 0,
+            absent: (total_today || 0) - (present_today || 0)
+          },
+          sections: total_sections || 0
+        })
       } else {
-        console.error('Failed to load dashboard data:', result.error)
+        console.error('Failed to load dashboard data:', response.error)
+        toast.error('Failed to load dashboard data')
       }
     } catch (error) {
-      console.error('Failed to load dashboard data:', error)
-    }
-  }
-
-  const loadTotalStudents = async () => {
-    try {
-      const result = await window.electron.ipcRenderer.invoke('students:get')
-      if (result.success) {
-        setStudentCount(result.data.length)
-      }
-    } catch (error) {
-      console.error('Failed to load total students:', error)
+      console.error('Error loading dashboard data:', error)
+      toast.error('Failed to load dashboard data')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -198,7 +181,7 @@ const Dashboard = () => {
           label: function(context) {
             const label = context.dataset.label || '';
             const value = context.parsed.y;
-            const total = stats.totalStudents;
+            const total = stats.attendanceToday.total;
             const percentage = ((value / total) * 100).toFixed(1);
             return `${label}: ${value} (${percentage}%)`;
           }
@@ -380,6 +363,10 @@ const Dashboard = () => {
     }
   }
 
+  if (isLoading) {
+    return <div>Loading...</div>
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
@@ -425,7 +412,7 @@ const Dashboard = () => {
         </div>
 
         {/* Stats Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Total Sections Card */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-4">
@@ -451,12 +438,12 @@ const Dashboard = () => {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Students</p>
-                <p className="text-2xl font-bold text-gray-900">{studentCount}</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.studentCount}</p>
               </div>
             </div>
           </div>
 
-          {/* Present Percentage Card */}
+          {/* Today's Attendance Card */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-4">
               <div className="flex-shrink-0 w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
@@ -465,23 +452,13 @@ const Dashboard = () => {
                 </svg>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Present Rate</p>
-                <p className="text-2xl font-bold text-gray-900">{presentPercentage}%</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Absent Percentage Card */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-4">
-              <div className="flex-shrink-0 w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">Absent Rate</p>
-                <p className="text-2xl font-bold text-gray-900">{absentPercentage}%</p>
+                <p className="text-sm font-medium text-gray-600">Today's Attendance</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {stats.attendanceToday.present} / {stats.attendanceToday.total}
+                </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  {stats.attendanceToday.absent} absent
+                </p>
               </div>
             </div>
           </div>

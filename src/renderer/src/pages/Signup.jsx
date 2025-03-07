@@ -1,53 +1,71 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import toast from 'react-hot-toast'
 
 const Signup = () => {
   const navigate = useNavigate()
   const [formData, setFormData] = useState({
-    name: '',
+    username: '',
     email: '',
     password: '',
     password_confirmation: ''
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const { login } = useAuth()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
-    // Validate password confirmation
-    if (formData.password !== formData.password_confirmation) {
-      setError('Passwords do not match')
-      setLoading(false)
-      return
-    }
-
-    // Basic email validation
-    const emailRegex = /\S+@\S+\.\S+/
-    if (!emailRegex.test(formData.email)) {
-      setError('Please enter a valid email address')
-      setLoading(false)
-      return
-    }
-
     try {
-      // Use electron's ipcRenderer for registration as in the working code
-      const result = await window.electron.ipcRenderer.invoke('auth:register', formData)
-
-      // Handle registration response
-      if (result.success) {
-        navigate('/login', { state: { registrationSuccess: true } })
-      } else {
-        setError(result.error || 'An error occurred during registration')
+      // Validate passwords match
+      if (formData.password !== formData.password_confirmation) {
+        setError('Passwords do not match')
+        toast.error('Passwords do not match')
+        setLoading(false)
+        return
       }
-    } catch (err) {
-      setError('An error occurred during registration')
-    }
 
-    setLoading(false)
+      // Register user using auth-specific method
+      const response = await window.api.auth.register({
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        role: 'teacher' // Default role for signup
+      })
+
+      if (response.success) {
+        // Auto login after registration
+        const loginResponse = await window.api.auth.login({
+          email: formData.email,
+          password: formData.password
+        })
+
+        if (loginResponse.success) {
+          login(loginResponse.data)
+          toast.success('Registration successful!')
+          navigate('/dashboard')
+        } else {
+          setError('Registration successful but login failed')
+          toast.error('Registration successful but login failed')
+          navigate('/login', { 
+            state: { registrationSuccess: true } 
+          })
+        }
+      } else {
+        setError(response.error)
+        toast.error(response.error)
+      }
+    } catch (error) {
+      console.error('Registration error:', error)
+      setError('Failed to create an account')
+      toast.error('Failed to create an account')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -66,7 +84,7 @@ const Signup = () => {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Full Name
+            Username
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -76,11 +94,11 @@ const Signup = () => {
             </div>
             <input
               type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              value={formData.username}
+              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
               required
               className="w-full pl-12 pr-4 py-2.5 text-sm text-gray-900 bg-gray-50/50 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              placeholder="Enter your full name"
+              placeholder="Enter your username"
             />
           </div>
         </div>

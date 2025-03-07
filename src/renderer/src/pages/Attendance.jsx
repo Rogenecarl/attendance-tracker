@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns'
 import { toast } from 'react-hot-toast'
+import { useAuth } from '../context/AuthContext'
 
 const Attendance = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date())
@@ -13,6 +14,8 @@ const Attendance = () => {
   const [filteredStudents, setFilteredStudents] = useState([])
   const [currentPage, setCurrentPage] = useState(1)
   const studentsPerPage = 20
+  const [isLoading, setIsLoading] = useState(true)
+  const { user } = useAuth()
 
   // Get number of days in selected month
   const daysInMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0).getDate()
@@ -20,7 +23,7 @@ const Attendance = () => {
   useEffect(() => {
     loadSections()
     loadStudents()
-  }, [])
+  }, [selectedSection])
 
   useEffect(() => {
     filterStudents()
@@ -32,24 +35,37 @@ const Attendance = () => {
 
   const loadSections = async () => {
     try {
-      const result = await window.electron.ipcRenderer.invoke('sections:get')
-      if (result.success) {
-        setSections(result.data)
+      const response = await window.api.invoke('sections:get', { 
+        teacher_id: user.id 
+      })
+      if (response.success) {
+        setSections(response.data)
+      } else {
+        toast.error('Failed to load sections')
       }
     } catch (error) {
-      console.error('Failed to load sections:', error)
+      console.error('Error loading sections:', error)
+      toast.error('Failed to load sections')
     }
   }
 
   const loadStudents = async () => {
     try {
-      const result = await window.electron.ipcRenderer.invoke('students:get')
-      if (result.success) {
-        setStudents(result.data)
-        setFilteredStudents(result.data)
+      const response = await window.api.invoke('students:get', {
+        teacher_id: user.id,
+        section_id: selectedSection || undefined
+      })
+      if (response.success) {
+        setStudents(response.data)
+        setFilteredStudents(response.data)
+      } else {
+        toast.error('Failed to load students')
       }
     } catch (error) {
-      console.error('Failed to load students:', error)
+      console.error('Error loading students:', error)
+      toast.error('Failed to load students')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -90,36 +106,23 @@ const Attendance = () => {
     }
   }
 
-  const handleAttendanceChange = async (studentId, date, isPresent) => {
+  const handleAttendanceChange = async (studentId, isPresent) => {
     try {
-      const formattedDate = format(date, 'yyyy-MM-dd')
-      console.log('Marking attendance:', { studentId, date: formattedDate, isPresent }) // Debug log
-
-      const result = await window.electron.ipcRenderer.invoke('attendance:mark', {
-        student_id: parseInt(studentId), // Ensure studentId is a number
-        date: formattedDate,
-        status: isPresent
+      const response = await window.api.invoke('attendance:mark', {
+        student_id: studentId,
+        date: format(selectedDate, 'yyyy-MM-dd'),
+        status: isPresent ? 1 : 0,
+        teacher_id: user.id
       })
 
-      if (result.success) {
-        // Update local attendance state
-        setAttendance(prev => {
-          const dayOfMonth = date.getDate()
-          return {
-            ...prev,
-            [studentId]: {
-              ...(prev[studentId] || {}),
-              [dayOfMonth]: isPresent
-            }
-          }
-        })
+      if (response.success) {
         toast.success('Attendance marked successfully')
       } else {
-        toast.error('Failed to mark attendance')
+        toast.error(response.error || 'Failed to mark attendance')
       }
     } catch (error) {
       console.error('Error marking attendance:', error)
-      toast.error('Failed to mark attendance: ' + error.message)
+      toast.error('Failed to mark attendance')
     }
   }
 
@@ -410,7 +413,7 @@ const Attendance = () => {
                               <input
                                 type="checkbox"
                                 checked={isPresent}
-                                onChange={(e) => handleAttendanceChange(student.id, currentDate, e.target.checked)}
+                                onChange={(e) => handleAttendanceChange(student.id, e.target.checked)}
                                 disabled={isPastDate}
                                 className={`h-4 w-4 rounded border-gray-300 text-blue-600 transition-colors
                                   focus:ring-blue-500 focus:ring-offset-0 cursor-pointer

@@ -3,62 +3,68 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { setupAuthHandlers } from './handlers/authHandlers'
-import { getDatabasePath } from './database'
+import { getDatabasePath, initDatabase, resetAllTables, checkDatabaseState } from './database'
 import { setupStudentHandlers } from './handlers/studentHandlers'
 import { setupSectionHandlers } from './handlers/sectionHandlers'
 import { setupAttendanceHandlers } from './handlers/attendanceHandlers'
 import { setupDashboardHandlers } from './handlers/dashboardHandlers'
-import { getStudents } from './database'
+import { setupUserHandlers } from './handlers/userHandlers'
 
-function createWindow() {
-  // Create the browser window.
-  const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
-    show: false,
-    autoHideMenuBar: true,
-    ...(process.platform === 'linux' ? { icon } : {}),
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+async function createWindow() {
+  try {
+    await initDatabase()
+    console.log('Database initialized successfully')
+
+    const mainWindow = new BrowserWindow({
+      width: 900,
+      height: 670,
+      show: false,
+      autoHideMenuBar: true,
+      ...(process.platform === 'linux' ? { icon } : {}),
+      webPreferences: {
+        preload: join(__dirname, '../preload/index.js'),
+        sandbox: false
+      }
+    })
+
+    // Setup handlers before loading the window
+    setupAuthHandlers(ipcMain)
+    setupStudentHandlers(ipcMain)
+    setupSectionHandlers(ipcMain)
+    setupAttendanceHandlers(ipcMain)
+    setupDashboardHandlers(ipcMain)
+    setupUserHandlers(ipcMain)
+
+    // Then load the window
+    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+      mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
+    } else {
+      mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
     }
-  })
 
-  mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
-  })
+    mainWindow.on('ready-to-show', () => {
+      mainWindow.show()
+    })
 
-  mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
-    return { action: 'deny' }
-  })
+    mainWindow.webContents.setWindowOpenHandler((details) => {
+      shell.openExternal(details.url)
+      return { action: 'deny' }
+    })
 
-  // HMR for renderer base on electron-vite cli.
-  // Load the remote URL for development or the local html file for production.
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
-  } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    // Database path handler
+    ipcMain.handle('get:dbPath', () => {
+      return getDatabasePath()
+    })
+  } catch (error) {
+    console.error('Failed to initialize:', error)
+    app.quit()
   }
-
-  // Setup IPC handlers
-  setupAuthHandlers(ipcMain)
-  setupStudentHandlers(ipcMain)
-  setupSectionHandlers(ipcMain)
-  setupAttendanceHandlers(ipcMain)
-  setupDashboardHandlers(ipcMain)
-  
-  // Database path handler
-  ipcMain.handle('get:dbPath', () => {
-    return getDatabasePath()
-  })
 }
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-  // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
 
   // Default open or close DevTools by F12 in development

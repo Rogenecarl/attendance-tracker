@@ -1,42 +1,25 @@
-import { createContext, useContext, useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { createContext, useContext, useState } from 'react'
 
 const AuthContext = createContext(null)
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    try {
-      const storedUser = localStorage.getItem('user')
-      if (storedUser) {
-        setUser(JSON.parse(storedUser))
-      }
-    } catch (error) {
-      console.error('Error loading user from storage:', error)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
 
   const login = (userData) => {
     setUser(userData)
-    localStorage.setItem('user', JSON.stringify(userData))
   }
 
   const logout = () => {
     setUser(null)
-    localStorage.removeItem('user')
-    window.location.href = '#/login'
+    // Instead of using navigate directly, we'll let the component handle navigation
+    window.location.hash = '/login'
   }
 
-  if (loading) {
-    return <div>Loading...</div>
-  }
+  const isAdmin = () => user?.role === 'admin'
+  const isTeacher = () => user?.role === 'teacher'
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, isAdmin, isTeacher }}>
       {children}
     </AuthContext.Provider>
   )

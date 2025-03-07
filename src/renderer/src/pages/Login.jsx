@@ -1,7 +1,7 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { toast } from 'react-hot-toast'
+import toast from 'react-hot-toast'
 
 const Login = () => {
   const navigate = useNavigate()
@@ -34,20 +34,38 @@ const Login = () => {
     setIsLoading(true)
 
     try {
-      const result = await window.electron.ipcRenderer.invoke('auth:login', {
-        email: formData.email,
-        password: formData.password
-      })
-
-      if (result.success) {
-        login(result.data)
-        navigate('/dashboard', { replace: true })
-      } else {
-        setError(result.error || 'Invalid credentials')
+      // Debug log to check if window.api exists
+      console.log('window.api:', window.api)
+      
+      if (!window.api?.login) {
+        throw new Error('Login API not available')
       }
-    } catch (err) {
-      console.error('Login error:', err)
-      setError(`Login failed: ${err.message}`)
+
+      const response = await window.api.login({ 
+        email: formData.email, 
+        password: formData.password 
+      })
+      
+      console.log('Login response:', response) // Debug log
+      
+      if (response.success) {
+        login(response.data)
+        
+        if (response.data.role === 'admin') {
+          navigate('/admin')
+        } else {
+          navigate('/dashboard')
+        }
+        
+        toast.success('Logged in successfully')
+      } else {
+        setError(response.error || 'Login failed')
+        toast.error(response.error || 'Login failed')
+      }
+    } catch (error) {
+      console.error('Login error:', error)
+      setError(error.message || 'Login failed')
+      toast.error(error.message || 'Login failed')
     } finally {
       setIsLoading(false)
     }

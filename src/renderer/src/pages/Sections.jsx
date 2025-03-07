@@ -1,22 +1,24 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
-import { Fragment } from 'react'
+import { useAuth } from '../context/AuthContext'
+import toast from 'react-hot-toast'
 
 const Sections = () => {
   const [sections, setSections] = useState([])
   const [isLoading, setIsLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [currentSection, setCurrentSection] = useState(null)
+  const [sectionToDelete, setSectionToDelete] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const sectionsPerPage = 10
+  const [successMessage, setSuccessMessage] = useState('')
   const [formData, setFormData] = useState({
     name: '',
     schedule: ''
   })
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
-  const [sectionToDelete, setSectionToDelete] = useState(null)
-  const [successMessage, setSuccessMessage] = useState('')
-  const [currentPage, setCurrentPage] = useState(1)
-  const sectionsPerPage = 20
+  const { user } = useAuth()
 
   useEffect(() => {
     loadSections()
@@ -24,12 +26,18 @@ const Sections = () => {
 
   const loadSections = async () => {
     try {
-      const result = await window.electron.ipcRenderer.invoke('sections:get')
-      if (result.success) {
-        setSections(result.data)
+      const response = await window.api.invoke('sections:get', {
+        teacher_id: user.id
+      })
+      
+      if (response.success) {
+        setSections(response.data)
+      } else {
+        toast.error('Failed to load sections')
       }
     } catch (error) {
-      console.error('Failed to load sections:', error)
+      console.error('Error loading sections:', error)
+      toast.error('Failed to load sections')
     } finally {
       setIsLoading(false)
     }
@@ -37,24 +45,36 @@ const Sections = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
     try {
-      const result = currentSection
-        ? await window.electron.ipcRenderer.invoke('sections:update', {
-            id: currentSection.id,
-            ...formData
-          })
-        : await window.electron.ipcRenderer.invoke('sections:add', formData)
+      let response
+      if (currentSection) {
+        // Update existing section
+        response = await window.api.invoke('sections:update', {
+          id: currentSection.id,
+          section_data: formData,
+          user_role: user.role
+        })
+      } else {
+        // Add new section
+        response = await window.api.invoke('sections:add', {
+          section_data: formData,
+          user_role: user.role
+        })
+      }
 
-      if (result.success) {
-        setSuccessMessage(currentSection ? 'Section updated successfully!' : 'Section added successfully!')
-        setTimeout(() => setSuccessMessage(''), 3000)
+      if (response.success) {
+        toast.success(currentSection ? 'Section updated successfully' : 'Section added successfully')
         setIsAddModalOpen(false)
-        setCurrentSection(null)
         setFormData({ name: '', schedule: '' })
+        setCurrentSection(null)
         loadSections()
+      } else {
+        toast.error(response.error || `Failed to ${currentSection ? 'update' : 'add'} section`)
       }
     } catch (error) {
-      console.error('Failed to save section:', error)
+      console.error('Error handling section:', error)
+      toast.error(`Failed to ${currentSection ? 'update' : 'add'} section`)
     }
   }
 
@@ -74,17 +94,39 @@ const Sections = () => {
 
   const handleDeleteConfirm = async () => {
     try {
-      const result = await window.electron.ipcRenderer.invoke('sections:delete', sectionToDelete.id)
-      if (result.success) {
-        setSuccessMessage('Section deleted successfully!')
-        setTimeout(() => setSuccessMessage(''), 3000)
-        loadSections()
+      const response = await window.api.invoke('sections:delete', {
+        id: sectionToDelete.id,
+        user_role: user.role
+      })
+
+      if (response.success) {
+        toast.success('Section deleted successfully')
         setIsDeleteModalOpen(false)
         setSectionToDelete(null)
+        loadSections()
+      } else {
+        toast.error(response.error || 'Failed to delete section')
       }
     } catch (error) {
-      console.error('Failed to delete section:', error)
+      console.error('Error deleting section:', error)
+      toast.error('Failed to delete section')
     }
+  }
+
+  // Filter sections based on search query
+  const filteredSections = sections.filter(section =>
+    section.name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredSections.length / sectionsPerPage)
+  const paginatedSections = filteredSections.slice(
+    (currentPage - 1) * sectionsPerPage,
+    currentPage * sectionsPerPage
+  )
+
+  if (isLoading) {
+    return <div>Loading...</div>
   }
 
   return (
@@ -96,19 +138,21 @@ const Sections = () => {
             <h1 className="text-3xl font-bold text-gray-900">Sections</h1>
             <p className="mt-2 text-sm text-gray-600">Manage class sections and schedules</p>
           </div>
-          <button
-            onClick={() => {
-              setCurrentSection(null)
-              setFormData({ name: '', schedule: '' })
-              setIsAddModalOpen(true)
-            }}
-            className="inline-flex items-center px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Add New Section
-          </button>
+          {user.role === 'admin' && (
+            <button
+              onClick={() => {
+                setCurrentSection(null)
+                setFormData({ name: '', schedule: '' })
+                setIsAddModalOpen(true)
+              }}
+              className="inline-flex items-center px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Add New Section
+            </button>
+          )}
         </div>
 
         {/* Success Message */}
@@ -166,44 +210,39 @@ const Sections = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {sections
-                .filter(section =>
-                  section.name.toLowerCase().includes(searchQuery.toLowerCase())
-                )
-                .slice((currentPage - 1) * sectionsPerPage, currentPage * sectionsPerPage)
-                .map((section) => (
-                  <tr key={section.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {section.id}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {section.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {section.schedule}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="flex items-center justify-end gap-3">
-                        <button
-                          onClick={() => handleEdit(section)}
-                          className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50 transition-colors"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClick(section)}
-                          className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50 transition-colors"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+              {paginatedSections.map((section) => (
+                <tr key={section.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {section.id}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {section.name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {section.schedule}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <div className="flex items-center justify-end gap-3">
+                      <button
+                        onClick={() => handleEdit(section)}
+                        className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50 transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClick(section)}
+                        className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50 transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
 
@@ -252,16 +291,12 @@ const Sections = () => {
                     </button>
 
                     <div className="flex items-center gap-1">
-                      {[...Array(Math.ceil(sections.filter(section =>
-                        section.name.toLowerCase().includes(searchQuery.toLowerCase())
-                      ).length / sectionsPerPage))].map((_, index) => {
+                      {[...Array(totalPages)].map((_, index) => {
                         const pageNumber = index + 1;
                         const isCurrentPage = pageNumber === currentPage;
                         const isNearCurrentPage = Math.abs(pageNumber - currentPage) <= 1;
                         const isFirstPage = pageNumber === 1;
-                        const isLastPage = pageNumber === Math.ceil(sections.filter(section =>
-                          section.name.toLowerCase().includes(searchQuery.toLowerCase())
-                        ).length / sectionsPerPage);
+                        const isLastPage = pageNumber === totalPages;
 
                         if (isNearCurrentPage || isFirstPage || isLastPage) {
                           return (
@@ -281,9 +316,7 @@ const Sections = () => {
                           );
                         } else if (
                           (pageNumber === currentPage - 2 && currentPage > 3) ||
-                          (pageNumber === currentPage + 2 && currentPage < Math.ceil(sections.filter(section =>
-                            section.name.toLowerCase().includes(searchQuery.toLowerCase())
-                          ).length / sectionsPerPage) - 2)
+                          (pageNumber === currentPage + 2 && currentPage < totalPages - 2)
                         ) {
                           return (
                             <span key={pageNumber} className="px-2 text-gray-400" aria-hidden="true">
@@ -297,17 +330,11 @@ const Sections = () => {
 
                     <button
                       onClick={() => setCurrentPage(prev => 
-                        Math.min(prev + 1, Math.ceil(sections.filter(section =>
-                          section.name.toLowerCase().includes(searchQuery.toLowerCase())
-                        ).length / sectionsPerPage))
+                        Math.min(prev + 1, totalPages)
                       )}
-                      disabled={currentPage === Math.ceil(sections.filter(section =>
-                        section.name.toLowerCase().includes(searchQuery.toLowerCase())
-                      ).length / sectionsPerPage)}
+                      disabled={currentPage === totalPages}
                       className={`p-2 rounded-lg transition-colors ${
-                        currentPage === Math.ceil(sections.filter(section =>
-                          section.name.toLowerCase().includes(searchQuery.toLowerCase())
-                        ).length / sectionsPerPage)
+                        currentPage === totalPages
                           ? 'bg-gray-50 text-gray-400 cursor-not-allowed'
                           : 'text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
                       }`}

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import { Fragment } from 'react'
+import { useAuth } from '../context/AuthContext'
+import toast from 'react-hot-toast'
 
 const Students = () => {
   const [students, setStudents] = useState([])
@@ -19,20 +21,27 @@ const Students = () => {
   const [successMessage, setSuccessMessage] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const studentsPerPage = 20
+  const { user } = useAuth()
 
   useEffect(() => {
-    loadStudents()
+    fetchStudents()
     loadSections()
   }, [])
 
-  const loadStudents = async () => {
+  const fetchStudents = async () => {
     try {
-      const result = await window.electron.ipcRenderer.invoke('students:get')
-      if (result.success) {
-        setStudents(result.data)
+      const response = await window.api.invoke('students:get', { 
+        teacher_id: user.id 
+      })
+      
+      if (response.success) {
+        setStudents(response.data)
+      } else {
+        toast.error(response.error || 'Failed to fetch students')
       }
     } catch (error) {
-      console.error('Failed to load students:', error)
+      console.error('Error fetching students:', error)
+      toast.error('Failed to fetch students')
     } finally {
       setIsLoading(false)
     }
@@ -52,23 +61,25 @@ const Students = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      const result = currentStudent
-        ? await window.electron.ipcRenderer.invoke('students:update', {
-            id: currentStudent.id,
-            ...formData
-          })
-        : await window.electron.ipcRenderer.invoke('students:add', formData)
+      const response = await window.api.invoke('students:update', {
+        id: currentStudent?.id,
+        student_data: formData,
+        teacher_id: user.id
+      })
 
-      if (result.success) {
+      if (response.success) {
         setSuccessMessage(currentStudent ? 'Student updated successfully!' : 'Student added successfully!')
         setTimeout(() => setSuccessMessage(''), 3000)
         setIsAddModalOpen(false)
         setCurrentStudent(null)
         setFormData({ name: '', student_id: '', section_id: '' })
-        loadStudents()
+        fetchStudents()
+      } else {
+        toast.error(response.error || 'Failed to update student')
       }
     } catch (error) {
-      console.error('Failed to save student:', error)
+      console.error('Error updating student:', error)
+      toast.error('Failed to update student')
     }
   }
 
@@ -89,16 +100,42 @@ const Students = () => {
 
   const handleDeleteConfirm = async () => {
     try {
-      const result = await window.electron.ipcRenderer.invoke('students:delete', studentToDelete.id)
-      if (result.success) {
+      const response = await window.api.invoke('students:delete', {
+        id: studentToDelete.id,
+        teacher_id: user.id
+      })
+      
+      if (response.success) {
         setSuccessMessage('Student deleted successfully!')
         setTimeout(() => setSuccessMessage(''), 3000)
-        loadStudents()
+        fetchStudents()
         setIsDeleteModalOpen(false)
         setStudentToDelete(null)
+      } else {
+        toast.error(response.error || 'Failed to delete student')
       }
     } catch (error) {
-      console.error('Failed to delete student:', error)
+      console.error('Error deleting student:', error)
+      toast.error('Failed to delete student')
+    }
+  }
+
+  const handleAddStudent = async (studentData) => {
+    try {
+      const response = await window.api.invoke('students:add', {
+        student_data: studentData,
+        teacher_id: user.id
+      })
+      
+      if (response.success) {
+        toast.success('Student added successfully')
+        fetchStudents()
+      } else {
+        toast.error(response.error || 'Failed to add student')
+      }
+    } catch (error) {
+      console.error('Error adding student:', error)
+      toast.error('Failed to add student')
     }
   }
 
